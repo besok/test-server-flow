@@ -1,33 +1,27 @@
 package com.besok.server.flow.json.parser
 
-import org.scalatest.FunSuite;
+import org.scalatest.FunSuite
 
-object JsonParserTester extends JsonParser {
-  def test[T <: JsonValue](parser: Parser[T])(args: (String, T => Unit)*): Unit = {
-    for ((i, f) <- args) {
-      parse(parser, i) match {
-        case Success(matched, _) => f(matched)
-        case Failure(msg, _) =>
-          println(s"FAILURE: $msg");
-          assert(false)
-        case Error(msg, _) =>
-          println(s"ERROR: $msg")
-          assert(false)
-      }
+import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try};
+
+object T {
+
+  implicit def string2Parser(s: String) = JsonParser(s)
+
+  def test[T <: JsonValue](rule: => Try[T])(assertion: T => Unit): Unit = {
+    rule match {
+      case Success(value) => assertion(value)
+      case Failure(exception) => throw exception
     }
   }
 }
 
 class JsonParserTest extends FunSuite {
 
+  import T._
 
-  test("integer_basic") {
-    JsonParserTester.test(JsonParserTester.integer) {
-      ("123", (p: IntValue) => assert(p.v == 123))
-      ("1", (p: IntValue) => assert(p.v == 1))
-      ("0", (p: IntValue) => assert(p.v == 0))
-      ("0123", (p: IntValue) => assert(p.v == 123))
-    }
+  test("basic") {
+    T.test("123".Numbers.run())(p => assert(p == IntValue(123)))
   }
-
 }

@@ -1,20 +1,24 @@
 package com.besok.server.flow.json.parser
 
+import org.parboiled2.{Parser, ParserInput}
+
 import scala.language.implicitConversions
-import scala.util.matching.Regex
-import scala.util.parsing.combinator.RegexParsers
 
 
 abstract sealed class JsonValue
 
 object JsonValue {
-  implicit def string2IntValue(v: String) = IntValue(v.toInt)
 
-  implicit def string2DoubleValue(v: String) = DoubleValue(v.toDouble)
+  implicit  class JsonValueHelper(v: String) {
+    def toIntValue = IntValue(v.toInt)
 
-  implicit def string2BooleanValue(v: String) = BooleanValue(v.toBoolean)
+    def string2DoubleValue = DoubleValue(v.toDouble)
 
-  implicit def string2NullValue(v: String) = NullValue
+    def string2BooleanValue = BooleanValue(v.toBoolean)
+
+    def string2NullValue = NullValue
+  }
+
 }
 
 case class StringValue(v: String) extends JsonValue
@@ -31,12 +35,12 @@ case class ObjectValue(v: Map[String, JsonValue]) extends JsonValue
 
 case class ArrayValue(v: Seq[JsonValue]) extends JsonValue
 
-class JsonParser extends RegexParsers {
-  override val whiteSpace: Regex = "[ \t\r\f]+".r
+case class JsonParser(input: ParserInput) extends Parser {
 
-  override def skipWhitespace = true
+  import org.parboiled2._
+  import JsonValue._
 
-  def integer = "([0-9]+)".r ^^ JsonValue.string2IntValue
-
+  def Numbers = rule {
+    capture(optional('-') ~ oneOrMore(CharPredicate.Digit)) ~> (_.toIntValue)
+  }
 }
-
