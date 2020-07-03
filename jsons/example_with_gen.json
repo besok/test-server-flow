@@ -1,0 +1,14 @@
+{
+  ">|sequence": "seq(1)",
+  ">|string": "str(10)",
+  ">|number": "num(1,100)",
+  ">|string_from_file": "str_file(\\home\\user)",
+  ">|string_from_file_del": "str_file(\\home\\user,;)",
+  ">|num_from_file": "num_file(\\home\\user,;)",
+  ">|string_from_list": "str_list(a,b,c,\"s\",and \\)",
+  ">|num_from_list": "num_list(1,2,3,1.3,3e-1)",
+  ">|uuid" :"uuid()",
+  ">|date": "time(%Y-%m-%d %H:%M:%S)",
+  ">|array": "array(100,num(1,100))",
+  ">|var": "[var_name]"
+}

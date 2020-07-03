@@ -1,0 +1,63 @@
+{
+  "primitives": {
+    "string": "simple string",
+    "q_string": "string with \" in the middle of the string",
+    "s_string":"string with \\  \n in the middle",
+    "true": true,
+    "false": false,
+    "null": null,
+    "int": 123,
+    "neg_0": -0,
+    "neg_int": -123,
+    "double": 123.321,
+    "neg_double": -123.321,
+    "double_with_e": 123e10,
+    "double_with_neg_e": 123e-10,
+    "double_with_pos_e": 123e+10
+  },
+  "complex": {
+    "arrays": {
+      "array_empty": [],
+      "array_simple": [
+        1,
+        2,
+        3
+      ],
+      "array_het": [
+        1,
+        "s",
+        true
+      ],
+      "array_obj_empty": [
+        {},
+        {}
+      ],
+      "array_obj": [
+        {
+          "id": 1
+        },
+        {
+          "name": "name"
+        }
+      ]
+    },
+    "objects": {
+      "empty": {},
+      "full": {
+        "full": {
+          "full": {}
+        }
+      },
+      "simple": {
+        "id": 1,
+        "age": 100,
+        "name": "B",
+        "skills": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    }
+  }
+}
