@@ -12,7 +12,8 @@ trait ParserTester {
     for ((p, a) <- p) {
       rule(p) match {
         case Success(value) => a(value)
-        case Failure(exception) => throw exception
+        case Failure(exception) =>
+          throw exception
       }
     }
   }
