@@ -13,7 +13,9 @@ object JsonTester extends ParserTester {
 
 class JsonParserTest extends FunSuite {
 
-  import JsonTester._
+  test("1"){
+    print("!")
+  }
 
   test("numbers") {
     JsonTester.test(_.IntJson.run()) {
@@ -45,9 +47,9 @@ class JsonParserTest extends FunSuite {
     }
   }
 
-//  test("double") {
-//    JsonTester.test(_.DoubleJson.run()) {
-//      ("123.1", (p: DoubleValue) => assert(p.v == 123.1))
-//    }
-//  }
+  test("double") {
+    JsonTester.test(_.DoubleJson.run()) {
+      ("123.1", (p: DoubleValue) => assert(p.v == 123.1))
+    }
+  }
 }

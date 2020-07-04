@@ -1,7 +1,5 @@
 package com.besok.server.flow.json.parser
 
-import java.lang.Integer.parseInt
-
 import org.parboiled2.{Parser, ParserInput, StringBuilding}
 
 import scala.language.implicitConversions
@@ -43,7 +41,7 @@ case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
 
   import JsonValue._
   import org.parboiled2._
-  import CharPredicate.{Digit, HexDigit}
+  import CharPredicate.{Digit,HexDigit}
 
   val WhiteSpaceChar: CharPredicate = CharPredicate(" \n\r\t\f")
   val QuoteBackslash: CharPredicate = CharPredicate("\"\\")
@@ -53,7 +51,7 @@ case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
 
   def Unicode = rule('u' ~ capture(
     HexDigit ~ HexDigit ~ HexDigit ~ HexDigit
-  ) ~> (parseInt(_, 16)))
+  ) ~> (Integer.parseInt(_, 16)))
 
 
   def PlainChar = rule(!QuoteBackslash ~ ANY ~ appendSB())
