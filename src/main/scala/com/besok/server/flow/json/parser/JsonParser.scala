@@ -16,7 +16,7 @@ object JsonValue {
 
     def string2BooleanValue = BooleanValue(v.toBoolean)
 
-    def string2NullValue = NullValue
+    def toNullValue = NullValue
   }
 
 }
@@ -42,5 +42,8 @@ case class JsonParser(input: ParserInput) extends Parser {
 
   def Numbers = rule {
     capture(optional('-') ~ oneOrMore(CharPredicate.Digit)) ~> (_.toIntValue)
+  }
+  def Null = rule{
+    capture("null") ~> (_.toNullValue)
   }
 }
