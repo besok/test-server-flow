@@ -3,51 +3,70 @@ package com.besok.server.flow.json.parser
 import org.parboiled2.{Parser, ParserInput, StringBuilding}
 
 import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
 
-abstract sealed class JsonValue
+abstract sealed class Json {
+  override def toString: String = this match {
+    case NullValue => "null"
+    case IntValue(v) => v.toString
+    case DoubleValue(v) => v.toString
+    case StringValue(v) => "\""+v+"\""
+    case BooleanValue(v) => v.toString
+    case ArrayValue(arr) => s"""[${arr.mkString(",")}]"""
+    case o @ ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
 
-object JsonValue {
-
-  implicit class JsonValueHelper(v: String) {
-    def toIntValue = IntValue(v.toInt)
-
-    def toStringValue = StringValue(v)
-
-    def toDoubleValue = DoubleValue(v.toDouble)
-
-    def toBoolValue = BooleanValue(v.toBoolean)
-
-    def toNullValue = NullValue
   }
-
 }
 
-case class StringValue(v: String) extends JsonValue
+object Json {
 
-case class IntValue(v: Int) extends JsonValue
+  implicit class StringHelper(v: String) {
+    def toIntValue: IntValue = IntValue(v.toInt)
 
-case class DoubleValue(v: Double) extends JsonValue
+    def toStringValue: StringValue = StringValue(v)
 
-case class BooleanValue(v: Boolean) extends JsonValue
+    def toDoubleValue: DoubleValue = DoubleValue(v.toDouble)
 
-case object NullValue extends JsonValue
+    def toBoolValue: BooleanValue = BooleanValue(v.toBoolean)
 
-case class ObjectValue(v: Map[String, JsonValue]) extends JsonValue
+    def toNullValue: Json = NullValue
+  }
 
-case class ArrayValue(v: Seq[JsonValue]) extends JsonValue
+  def toObject(f: Seq[(String, Json)]) = ObjectValue(f.toMap)
 
-case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
+  def mapToString(o: ObjectValue) = {
+    (for ((k, v) <- o.v) yield {
+      s""""$k": ${v.toString}"""
+    }).mkString(",")
+  }
+}
 
-  import JsonValue._
+case class StringValue(v: String) extends Json
+
+case class IntValue(v: Int) extends Json
+
+case class DoubleValue(v: Double) extends Json
+
+case class BooleanValue(v: Boolean) extends Json
+
+case object NullValue extends Json
+
+case class ObjectValue(v: Map[String, Json]) extends Json
+
+case class ArrayValue(v: Seq[Json]) extends Json
+
+class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
+
+  import Json._
   import org.parboiled2._
-  import CharPredicate.{Digit,HexDigit}
+  import CharPredicate.{Digit, HexDigit}
 
   val WhiteSpaceChar: CharPredicate = CharPredicate(" \n\r\t\f")
   val QuoteBackslash: CharPredicate = CharPredicate("\"\\")
   val QuoteSlashBackSlash: CharPredicate = QuoteBackslash ++ "/"
 
-  def Ws(c: Char) = rule(c ~ rule(zeroOrMore(WhiteSpaceChar)))
+  def sp(c: Char) = rule(zeroOrMore(WhiteSpaceChar) ~ c ~ zeroOrMore(WhiteSpaceChar))
 
   def Unicode = rule('u' ~ capture(
     HexDigit ~ HexDigit ~ HexDigit ~ HexDigit
@@ -60,7 +79,7 @@ case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
 
   def EscapedChar =
     rule(
-      QuoteSlashBackSlash ~ appendSB()
+      QuoteSlashBackSlash ~ appendSB("\\\"")
         | 'b' ~ appendSB('\b')
         | 'f' ~ appendSB('\f')
         | 'n' ~ appendSB('\n')
@@ -69,6 +88,9 @@ case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
         | Unicode ~> { ch => sb.append(ch.asInstanceOf[Char]); () }
     )
 
+  def String = rule {
+    sp('"') ~ clearSB() ~ Characters ~ sp('"') ~ push(sb.toString)
+  }
 
   def IntJson = rule {
     capture(optional('-') ~ oneOrMore(Digit)) ~> (_.toIntValue)
@@ -89,7 +111,32 @@ case class JsonParser(input: ParserInput) extends Parser with StringBuilding {
   }
 
   def StringJson = rule {
-    '"' ~ clearSB() ~ Characters ~ Ws('"') ~ push(sb.toString) ~> (_.toStringValue)
+    String ~> (_.toStringValue)
   }
 
+  def ObjectJson: Rule1[ObjectValue] = rule {
+    sp('{') ~ zeroOrMore(KeyValue).separatedBy(sp(',')) ~ sp('}') ~> (Json.toObject(_))
+  }
+
+  def KeyValue = rule {
+    String ~ sp(':') ~ Value ~> ((_, _))
+  }
+
+  def Value = rule {
+    DoubleJson | IntJson | NullJson | BoolJson | StringJson | ObjectJson | ArrayJson
+  }
+
+  def ArrayJson: Rule1[ArrayValue] = rule {
+    sp('[') ~ zeroOrMore(Value).separatedBy(sp(',')) ~ sp(']') ~> (ArrayValue(_))
+  }
+
+  def FileJson = rule(zeroOrMore(WhiteSpaceChar) ~ Value ~ EOI)
+}
+
+object JsonParser {
+  implicit def string2Parser(s: String): JsonParser = new JsonParser(s)
+  def parse(input:String) = new JsonParser(input).FileJson.run() match {
+    case Success(value) => value
+    case Failure(exception) => throw exception
+  }
 }
