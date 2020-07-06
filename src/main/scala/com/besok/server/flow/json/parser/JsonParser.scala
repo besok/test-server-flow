@@ -11,15 +11,64 @@ abstract sealed class Json {
     case NullValue => "null"
     case IntValue(v) => v.toString
     case DoubleValue(v) => v.toString
-    case StringValue(v) => "\""+v+"\""
+    case StringValue(v) => "\"" + v + "\""
     case BooleanValue(v) => v.toString
     case ArrayValue(arr) => s"""[${arr.mkString(",")}]"""
-    case o @ ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
-
+    case o@ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
   }
 }
 
 object Json {
+
+  implicit class PrettyJson[T<:Json](j: T) {
+    def prettyString: String = formatStr(0)
+
+    def formatStr(margin: Int): String = {
+      this.j match {
+        case ArrayValue(values) =>
+          if (values.isEmpty) {
+            "[]"
+          } else {
+            val sb = new StringBuilder
+            sb ++= "["
+            sb ++= values
+              .map(_.formatStr(margin + 1))
+              .fold("")(processInternalElems(margin))
+            sb ++= s"\n${sp(margin - 1)}]"
+            sb.toString
+          }
+        case ObjectValue(values) =>
+          if (values.isEmpty) {
+            "{}"
+          } else {
+            val sb = new StringBuilder
+            sb ++= "{"
+            sb ++= values
+              .map{case (k:String,v:Json) => s"""${sp(margin+1)}"$k": ${v.formatStr(margin+2)}"""}
+              .fold("")(processInternalElems(margin))
+            sb ++= s"\n${sp(margin - 1)}}"
+            sb.toString
+          }
+        case v => v.toString
+      }
+    }
+
+    private def processInternalElems(margin: Int) = {
+      (a: String, b: String) => {
+        (a, b) match {
+          case ("", b) => s"\n${sp(margin)}$b"
+          case (a, "") => a
+          case (a, b) => s"$a,\n${sp(margin)}$b"
+        }
+      }
+    }
+
+    def sp(i: Int): String = {
+      if (i <= 0) "" else (for (_ <- 0 to i) yield {
+        " "
+      }).mkString
+    }
+  }
 
   implicit class StringHelper(v: String) {
     def toIntValue: IntValue = IntValue(v.toInt)
@@ -131,12 +180,13 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   def FileJson = rule(zeroOrMore(WhiteSpaceChar) ~ Value ~ EOI)
+
+  def json: Json = FileJson.run() match {
+    case Success(value) => value
+    case Failure(exception) => throw exception
+  }
 }
 
 object JsonParser {
   implicit def string2Parser(s: String): JsonParser = new JsonParser(s)
-  def parse(input:String) = new JsonParser(input).FileJson.run() match {
-    case Success(value) => value
-    case Failure(exception) => throw exception
-  }
 }

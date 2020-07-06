@@ -2,7 +2,7 @@
   "primitives": {
     "string": "simple string",
     "q_string": "string with \" in the middle \" of the \" string",
-    "s_string": "string with \\  \n in the middle",
+    "s_string": "string with \\ in the middle",
     "true": true,
     "false": false,
     "null": null,

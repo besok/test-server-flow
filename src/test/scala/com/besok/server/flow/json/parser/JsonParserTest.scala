@@ -13,8 +13,6 @@ class JsonParserTest extends FunSuite {
 
   import JsonParser._
 
-  test("") {}
-
   test("numbers") {
     JsonTester.test(_.IntJson.run()) {
       ("123", (p: IntValue) => assert(p == IntValue(123)))
@@ -109,19 +107,32 @@ class JsonParserTest extends FunSuite {
       ))
   }
 
+  test("to_pretty_string"){
+    import Json._
+
+    assert(ArrayValue(Seq()).prettyString.equals("[]"))
+
+    var prStr = ArrayValue(Seq(IntValue(1), IntValue(2), IntValue(3))).formatStr(10)
+    assert(prStr.equals("[\n           1,\n           2,\n           3\n          ]"))
+
+     prStr = ObjectValue(Map(
+      "a" -> ArrayValue(Seq(StringValue("ab"), StringValue("abc"))),
+      "b" -> ObjectValue(Map("b" -> ArrayValue(Seq(BooleanValue(true))), "c" -> NullValue))
+    )).prettyString
+   assert(prStr.equals("{\n  \"a\": [\n   \"ab\",\n   \"abc\"\n  ],\n  \"b\": {\n       \"b\": [\n     true\n    ],\n       \"c\": null\n  }\n}"))
+
+  }
 
   test("simple") {
-    val json = JsonParser.parse("""{"a": "abc\"abc"}""")
-    println(json.toString)
+    assert("""{"a": "abc\"abc"}""".json == ObjectValue(Map("a" -> StringValue("abc\\\"abc"))))
   }
 
   test("complex") {
     import scala.io.Source
     val txt = Source.fromResource("jsons/example_standart.json").mkString
 
-    val string = JsonParser.parse(txt).toString
-    println(string)
-
+    val json = txt.json
+    println(json)
   }
 
 }
