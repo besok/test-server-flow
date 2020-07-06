@@ -10,6 +10,6 @@
   ">|uuid" :"uuid() => global.var_name",
   ">|date": "time(%Y-%m-%d %H:%M:%S)",
   ">|array": "array(100,num(1,100))",
-  ">|local_var": "local_context(var_name)"
+  ">|local_var": "local_context(var_name)",
   ">|global_var": "global_context(var_name)"
 }
