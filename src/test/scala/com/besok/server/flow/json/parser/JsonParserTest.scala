@@ -110,7 +110,7 @@ class JsonParserTest extends FunSuite {
   test("to_pretty_string"){
     import Json._
 
-    assert(ArrayValue(Seq()).prettyString.equals("[]"))
+    assert(ArrayValue(Seq()).toPrettyString.equals("[]"))
 
     var prStr = ArrayValue(Seq(IntValue(1), IntValue(2), IntValue(3))).formatStr(10)
     assert(prStr.equals("[\n           1,\n           2,\n           3\n          ]"))
@@ -118,7 +118,7 @@ class JsonParserTest extends FunSuite {
      prStr = ObjectValue(Map(
       "a" -> ArrayValue(Seq(StringValue("ab"), StringValue("abc"))),
       "b" -> ObjectValue(Map("b" -> ArrayValue(Seq(BooleanValue(true))), "c" -> NullValue))
-    )).prettyString
+    )).toPrettyString
    assert(prStr.equals("{\n  \"a\": [\n   \"ab\",\n   \"abc\"\n  ],\n  \"b\": {\n       \"b\": [\n     true\n    ],\n       \"c\": null\n  }\n}"))
 
   }

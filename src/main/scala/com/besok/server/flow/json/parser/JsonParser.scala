@@ -21,7 +21,7 @@ abstract sealed class Json {
 object Json {
 
   implicit class PrettyJson[T<:Json](j: T) {
-    def prettyString: String = formatStr(0)
+    def toPrettyString: String = formatStr(0)
 
     def formatStr(margin: Int): String = {
       this.j match {
@@ -81,6 +81,7 @@ object Json {
 
     def toNullValue: Json = NullValue
   }
+
 
   def toObject(f: Seq[(String, Json)]) = ObjectValue(f.toMap)
 
