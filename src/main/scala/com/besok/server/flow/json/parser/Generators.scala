@@ -42,7 +42,9 @@ case class StringF(len: Int) extends GeneratorFunction {
 
 case class NumberF(start: Int, end: Int) extends GeneratorFunction {
   var r: Random = new Random
-
+  if(start >= end){
+    throw new JsonException
+  }
   override def generate: Json = (start + r.nextInt(end - start)).toJson
 }
 
