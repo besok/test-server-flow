@@ -16,11 +16,14 @@ abstract sealed class Json {
     case ArrayValue(arr) => s"""[${arr.mkString(",")}]"""
     case o@ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
   }
+
 }
+
+class JsonException extends RuntimeException
 
 object Json {
 
-  implicit class PrettyJson[T<:Json](j: T) {
+  implicit class PrettyJson[T <: Json](j: T) {
     def toPrettyString: String = formatStr(0)
 
     def formatStr(margin: Int): String = {
@@ -44,7 +47,7 @@ object Json {
             val sb = new StringBuilder
             sb ++= "{"
             sb ++= values
-              .map{case (k:String,v:Json) => s"""${sp(margin+1)}"$k": ${v.formatStr(margin+2)}"""}
+              .map { case (k: String, v: Json) => s"""${sp(margin + 1)}"$k": ${v.formatStr(margin + 2)}""" }
               .fold("")(processInternalElems(margin))
             sb ++= s"\n${sp(margin - 1)}}"
             sb.toString
@@ -67,6 +70,20 @@ object Json {
       if (i <= 0) "" else (for (_ <- 0 to i) yield {
         " "
       }).mkString
+    }
+  }
+
+  implicit class ToJsonHelper(v: Any) {
+    def toJson: Json = v match {
+      case v: String => StringValue(v)
+      case v: String if v.equals("null") => NullValue
+      case v: Int => IntValue(v)
+      case v: Double => DoubleValue(v)
+      case v: Float => DoubleValue(v)
+      case v: Boolean => BooleanValue(v)
+      case v: Map[String, Json] => ObjectValue(v)
+      case v: Seq[Json] => ArrayValue(v)
+      case _: Any => throw new JsonException()
     }
   }
 
