@@ -33,12 +33,29 @@ class GeneratorParser(val input: ParserInput) extends Parser {
   }
 
   def funcStrFromFile = rule {
-
-    funcName("str_file") ~ capture(STR) ~ optional(sp(',') ~ capture(STR)) ~ sp(')') ~>
+    funcName("str_file") ~ parsefromFile ~>
       ((p: String, s: Option[String]) => StringFromFileF(p, s.map(_.charAt(0)).getOrElse(',')))
   }
 
-  val STR = CharPredicate.All -- ','
+  def funcIntFromFile = rule {
+    funcName("num_file") ~ parsefromFile ~>
+      ((p: String, s: Option[String]) => IntFromFileF(p, s.map(_.charAt(0)).getOrElse(',')))
+  }
+
+
+  def funcStrFromList = rule {
+    funcName("str_list") ~ capture(zeroOrMore(STR).separatedBy(sp(','))) ~ sp(')') ~> (v => FromListF(v))
+  }
+
+  def parsefromFile = rule {
+    capture(internalString) ~ optional(sp(',') ~ capture(internalString)) ~ sp(')')
+  }
+
+  def internalString = rule {
+    oneOrMore(STR)
+  }
+
+  val STR = CharPredicate.All -- ',' -- ')'
 }
 
 object GeneratorParser {

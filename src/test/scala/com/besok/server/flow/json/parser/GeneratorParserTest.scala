@@ -26,6 +26,30 @@ class GeneratorParserTest extends FunSuite {
     GenParserTester.test(_.funcStrFromFile.run()){
       ("str_file(C:\\projects\\test-server-flow\\target\\scala-2.13\\test-classes\\strings.txt)",(f:StringFromFileF) => f.generate match {
         case StringValue(v) => assert(expVal.contains(v))
+        case _ => fail()
+      })
+      ("str_file(C:\\projects\\test-server-flow\\target\\scala-2.13\\test-classes\\strings_.txt,;)",(f:StringFromFileF) => f.generate match {
+        case StringValue(v) => assert(expVal.contains(v))
+        case _ => fail()
+      })
+    }
+  }
+  test("int_from_file"){
+    val expVal = 1 to 7
+    GenParserTester.test(_.funcIntFromFile.run()){
+      ("num_file(C:\\projects\\test-server-flow\\target\\scala-2.13\\test-classes\\ints.txt,;)",(f:IntFromFileF) => f.generate match {
+        case IntValue(v) => assert(expVal.contains(v))
+        case _ => fail()
+      })
+    }
+  }
+
+  test("str_from_list"){
+    val expList = Seq("a","b","c")
+    GenParserTester.test(_.funcStrFromList.run()){
+      ("str_list(a,b,c)", (f:FromListF[String]) => f.generate match {
+        case StringValue(v) => assert(expList.contains(v))
+        case _ => fail()
       })
     }
   }
