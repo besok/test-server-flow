@@ -1,18 +1,22 @@
-package com.besok.server.flow.json.parser
+package com.besok.server.flow.json
 
 import scala.util.{Failure, Success}
 
 
-object Handler {
+case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit ctx: GeneratorContext) {
 
   import JsonParser._
   import GeneratorParser._
 
-  def retrieveJsonFrom(input: String, prefix: String)(implicit ctx: GeneratorContext): Json = {
+  val template: Json = retrieveJsonFrom(inputTemplate, prefix)
+
+  def generateJson = generateJson(template)
+
+  private def retrieveJsonFrom(input: String, prefix: String): Json = {
     retrieveJson(input.intoJson, prefix + "|")
   }
 
-  private def retrieveJson(json: Json, prefix: String)(implicit ctx: GeneratorContext): Json = {
+  private def retrieveJson(json: Json, prefix: String): Json = {
     json match {
       case ObjectValue(kv) => ObjectValue {
         for ((k, v) <- kv) yield {
@@ -35,7 +39,7 @@ object Handler {
     }
   }
 
-  def generateJson(json: Json): Json = json match {
+  private def generateJson(json: Json): Json = json match {
     case ObjectValue(v) => ObjectValue {
       for ((k, v) <- v) yield (k, generateJson(v))
     }
@@ -50,4 +54,8 @@ object Handler {
     case Some(value) => value.generate
   }
 
+}
+
+object JsonGenerator {
+  implicit def stringToJsonHandler(i:String)(implicit ctx:GeneratorContext) = JsonGenerator(i)
 }

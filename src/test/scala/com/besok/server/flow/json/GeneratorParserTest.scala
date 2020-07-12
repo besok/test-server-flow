@@ -1,4 +1,4 @@
-package com.besok.server.flow.json.parser
+package com.besok.server.flow.json
 
 import org.scalatest.FunSuite
 import Json._

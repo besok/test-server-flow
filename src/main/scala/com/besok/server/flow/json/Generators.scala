@@ -1,4 +1,4 @@
-package com.besok.server.flow.json.parser
+package com.besok.server.flow.json
 
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import com.besok.server.flow.json.parser.Json._
+import Json._
 import org.parboiled2.{Parser, ParserInput}
 
 import scala.io.Source
