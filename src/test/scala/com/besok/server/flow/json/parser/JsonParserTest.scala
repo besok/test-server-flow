@@ -14,11 +14,15 @@ class JsonParserTest extends FunSuite {
   import JsonParser._
 
   test("numbers") {
-    JsonTester.test(_.IntJson.run()) {
-      ("123", (p: IntValue) => assert(p == IntValue(123)))
-      ("-10", (p: IntValue) => assert(p == IntValue(-10)))
-      ("-0", (p: IntValue) => assert(p == IntValue(0)))
-      ("0a", (p: IntValue) => assert(p == IntValue(0)))
+    JsonTester.test(_.NumberJson.run()) {
+      ("123", (p: Json) => assert(p == IntValue(123)))
+      ("-10", (p: Json) => assert(p == IntValue(-10)))
+      ("-0", (p: Json) => assert(p == IntValue(0)))
+      ("0a", (p: Json) => assert(p == IntValue(0)))
+      ("123.1", (p: Json) => assert(p == DoubleValue(123.1)))
+      ("-123", (p: Json) => assert(p == DoubleValue(-123)))
+      ("1e10", (p: Json) => assert(p == DoubleValue("1e10".toDouble)))
+      ("1e-10", (p: Json) => assert(p == DoubleValue("1e-10".toDouble)))
     }
   }
 
@@ -46,15 +50,6 @@ class JsonParserTest extends FunSuite {
       (""" "a\"a" """, (p: StringValue) => {
         assert(p.v.equals("""a\"a"""))
       })
-    }
-  }
-
-  test("double") {
-    JsonTester.test(_.DoubleJson.run()) {
-      ("123.1", (p: DoubleValue) => assert(p.v == 123.1))
-      ("-123", (p: DoubleValue) => assert(p.v == -123))
-      ("1e10", (p: DoubleValue) => assert(p.v == "1e10".toDouble))
-      ("1e-10", (p: DoubleValue) => assert(p.v == "1e-10".toDouble))
     }
   }
 
@@ -107,7 +102,7 @@ class JsonParserTest extends FunSuite {
       ))
   }
 
-  test("to_pretty_string"){
+  test("to_pretty_string") {
     import Json._
 
     assert(ArrayValue(Seq()).toPrettyString.equals("[]"))
@@ -115,24 +110,42 @@ class JsonParserTest extends FunSuite {
     var prStr = ArrayValue(Seq(IntValue(1), IntValue(2), IntValue(3))).formatStr(10)
     assert(prStr.equals("[\n           1,\n           2,\n           3\n          ]"))
 
-     prStr = ObjectValue(Map(
+    prStr = ObjectValue(Map(
       "a" -> ArrayValue(Seq(StringValue("ab"), StringValue("abc"))),
       "b" -> ObjectValue(Map("b" -> ArrayValue(Seq(BooleanValue(true))), "c" -> NullValue))
     )).toPrettyString
-   assert(prStr.equals("{\n  \"a\": [\n   \"ab\",\n   \"abc\"\n  ],\n  \"b\": {\n       \"b\": [\n     true\n    ],\n       \"c\": null\n  }\n}"))
+    assert(prStr.equals("{\n  \"a\": [\n   \"ab\",\n   \"abc\"\n  ],\n  \"b\": {\n       \"b\": [\n     true\n    ],\n       \"c\": null\n  }\n}"))
 
   }
 
   test("simple") {
-    assert("""{"a": "abc\"abc"}""".json == ObjectValue(Map("a" -> StringValue("abc\\\"abc"))))
+    assert("""{"a": "abc\"abc"}""".intoJson == ObjectValue(Map("a" -> StringValue("abc\\\"abc"))))
+  }
+
+  test("number") {
+    JsonTester.test(_.NumberJson.run()) {
+      ("123.321", (p: Json) => assert(p == DoubleValue(123.321)))
+    }
   }
 
   test("complex") {
     import scala.io.Source
     val txt = Source.fromResource("jsons/example_standart.json").mkString
 
-    val json = txt.json
+    val json = txt.intoJson
     println(json)
   }
 
+  test("query") {
+    import scala.io.Source
+    val txt = Source.fromResource("jsons/example_standart.json").mkString
+
+    val json = txt.intoJson
+
+    json.query("complex.objects.simple.id") match {
+      case None => fail()
+      case Some(v) => assert(v == IntValue(1))
+    }
+
+  }
 }

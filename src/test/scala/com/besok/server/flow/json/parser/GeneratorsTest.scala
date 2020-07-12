@@ -41,7 +41,7 @@ class GeneratorsTest extends FunSuite {
   test("from_file") {
     val cl = Thread.currentThread().getContextClassLoader
 
-    val g1 = StringFromFileF(cl.getResource("strings.txt").getPath, ',')
+    val g1 = StringFromFileF(cl.getResource("strings.txt").getPath, ",")
     val expVal = Seq("a", "b", "c", "d", "e", "f")
     for (_ <- 0 to 10) {
       g1.generate match {
@@ -49,7 +49,7 @@ class GeneratorsTest extends FunSuite {
       }
     }
 
-    val g2 = IntFromFileF(cl.getResource("ints.txt").getPath, ';')
+    val g2 = IntFromFileF(cl.getResource("ints.txt").getPath, ";")
     val expInts = 1 to 7
     for (_ <- 0 to 10) {
       g2.generate match {

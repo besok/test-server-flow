@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 
-abstract sealed class Json {
+abstract sealed class Json(var f: Option[GeneratorFunction]) {
   override def toString: String = this match {
     case NullValue => "null"
     case IntValue(v) => v.toString
@@ -15,6 +15,22 @@ abstract sealed class Json {
     case BooleanValue(v) => v.toString
     case ArrayValue(arr) => s"""[${arr.mkString(",")}]"""
     case o@ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
+  }
+
+  def query(path: String): Option[Json] = {
+    val pathCmp = path.split("\\.")
+    var crJson = this
+
+    for (q <- pathCmp) {
+      crJson match {
+        case ObjectValue(kv) => for ((k, v) <- kv) {
+          if (k.equals(q)) crJson = v
+        }
+        case _ => return None
+      }
+    }
+
+    Some(crJson)
   }
 
 }
@@ -92,7 +108,10 @@ object Json {
 
     def toStringValue: StringValue = StringValue(v)
 
-    def toDoubleValue: DoubleValue = DoubleValue(v.toDouble)
+    def toNumber: Json = v.toIntOption match {
+      case None => DoubleValue(v.toDouble)
+      case Some(i) => IntValue(i)
+    }
 
     def toBoolValue: BooleanValue = BooleanValue(v.toBoolean)
 
@@ -109,19 +128,19 @@ object Json {
   }
 }
 
-case class StringValue(v: String) extends Json
+case class StringValue(v: String) extends Json(None)
 
-case class IntValue(v: Int) extends Json
+case class IntValue(v: Int) extends Json(None)
 
-case class DoubleValue(v: Double) extends Json
+case class DoubleValue(v: Double) extends Json(None)
 
-case class BooleanValue(v: Boolean) extends Json
+case class BooleanValue(v: Boolean) extends Json(None)
 
-case object NullValue extends Json
+case object NullValue extends Json(None)
 
-case class ObjectValue(v: Map[String, Json]) extends Json
+case class ObjectValue(v: Map[String, Json]) extends Json(None)
 
-case class ArrayValue(v: Seq[Json]) extends Json
+case class ArrayValue(v: Seq[Json]) extends Json(None)
 
 class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
 
@@ -159,10 +178,6 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
     sp('"') ~ clearSB() ~ Characters ~ sp('"') ~ push(sb.toString)
   }
 
-  def IntJson = rule {
-    capture(optional('-') ~ oneOrMore(Digit)) ~> (_.toIntValue)
-  }
-
   def NullJson = rule {
     capture("null") ~> (_.toNullValue)
   }
@@ -171,10 +186,10 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
     capture("true" | "false") ~> (_.toBoolValue)
   }
 
-  def DoubleJson = rule {
+  def NumberJson = rule {
     capture(
       optional("-") ~ oneOrMore(Digit) ~ optional("." ~ zeroOrMore(Digit)) ~ optional('e' ~ optional("-") ~ oneOrMore(Digit))
-    ) ~> (_.toDoubleValue)
+    ) ~> (_.toNumber)
   }
 
   def StringJson = rule {
@@ -190,7 +205,7 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
   }
 
   def Value = rule {
-    DoubleJson | IntJson | NullJson | BoolJson | StringJson | ObjectJson | ArrayJson
+    NumberJson | NullJson | BoolJson | StringJson | ObjectJson | ArrayJson
   }
 
   def ArrayJson: Rule1[ArrayValue] = rule {
@@ -199,7 +214,7 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
 
   def FileJson = rule(zeroOrMore(WhiteSpaceChar) ~ Value ~ EOI)
 
-  def json: Json = FileJson.run() match {
+  def intoJson: Json = FileJson.run() match {
     case Success(value) => value
     case Failure(exception) => throw exception
   }

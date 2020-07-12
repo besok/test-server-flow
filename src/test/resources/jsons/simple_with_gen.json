@@ -1,0 +1,12 @@
+{
+  "customer": {
+    ">|id": "seq(1)",
+    ">|name": "str(10)",
+    ">|amount": "num(100,200)",
+    "address": {
+      "street": "conory",
+      ">|geo": "uuid() => [geo.address]"
+    },
+    ">|coming_date": "time() => [customer.coming_date]"
+  }
+}
