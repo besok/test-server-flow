@@ -10,7 +10,7 @@ case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit c
 
   val template: Json = retrieveJsonFrom(inputTemplate, prefix)
 
-  def generateJson = generateJson(template)
+  def newJson = generateJson(template)
 
   private def retrieveJsonFrom(input: String, prefix: String): Json = {
     retrieveJson(input.intoJson, prefix + "|")

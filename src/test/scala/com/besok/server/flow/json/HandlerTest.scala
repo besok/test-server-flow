@@ -18,11 +18,13 @@ class HandlerTest extends FunSuite {
     assert(templateJson.query("customer.address.street").get.f.isEmpty)
     assert(templateJson.query("customer.address.geo").get.f.nonEmpty)
 
-    assert(txt.generateJson.query("customer.id").get == IntValue(1))
-    assert(txt.generateJson.query("customer.id").get == IntValue(2))
-    assert(txt.generateJson.query("customer.id").get == IntValue(3))
+    val g = JsonGenerator(txt)
 
-    val uuid = txt.generateJson.query("customer.address.geo").get
+    assert(g.newJson.query("customer.id").get == IntValue(1))
+    assert(g.newJson.query("customer.id").get == IntValue(2))
+    assert(g.newJson.query("customer.id").get == IntValue(3))
+
+    val uuid = txt.newJson.query("customer.address.geo").get
     assert(ctx.get("geo.address") == uuid)
 
   }
