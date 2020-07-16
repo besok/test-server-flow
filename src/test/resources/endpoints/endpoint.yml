@@ -1,0 +1,22 @@
+---
+endpoint:
+  name: endpoint1
+  input:
+    method: post
+    url: /endpoint
+  output:
+    code: 200
+    body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
+    prefix: ">>"
+---
+endpoint:
+  name: endpoint2
+  input:
+    method: get
+    url: /endpoint/{id}
+  output:
+    code: 200
+    body: '{
+        ">|field":" from_ctx(_endpoints.endpoint.input.body.field)",
+        "another_field": 1
+        }'

@@ -2,7 +2,7 @@ package com.besok.server.flow.json
 
 import org.scalatest.FunSuite
 
-class CurlTest extends FunSuite {
+class SenderTest extends FunSuite {
 
   test("curl"){
     val json = ObjectValue(Map(
