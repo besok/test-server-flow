@@ -50,13 +50,12 @@ case class EndpointTemplate(name: String, input: Input, output: Output)
 object EndpointTemplate {
 
   def processYaml(input: String)(implicit ctx: GeneratorContext): Seq[EndpointTemplate] =
-    new Yaml()
-      .loadAll(input)
-      .asScala.map(i => fromYaml(i.asInstanceOf[java.util.LinkedHashMap[String, Object]]))
-      .toSeq
+    new Yaml().loadAll(input).asScala.map(fromYaml).toSeq
 
-  def fromYaml(params: java.util.LinkedHashMap[String, Object])(implicit ctx: GeneratorContext): EndpointTemplate = {
-    val map = params.get("endpoint").asInstanceOf[java.util.LinkedHashMap[String, Object]].asScala
+  def fromYaml(params: AnyRef)(implicit ctx: GeneratorContext): EndpointTemplate = {
+
+    val map = params.asInstanceOf[java.util.LinkedHashMap[String, Object]]
+      .get("endpoint").asInstanceOf[java.util.LinkedHashMap[String, Object]].asScala
     val input = map.getOrElse("input", throw new EndpointException(s"the input should exist"))
       .asInstanceOf[java.util.LinkedHashMap[String, Object]].asScala
     val output = map.getOrElse("output", throw new EndpointException(s"the output should exist"))
