@@ -2,7 +2,7 @@
 endpoint:
   name: endpoint1
   input:
-    method: post
+    method: get
     url: /endpoint
   output:
     code: 200
@@ -13,10 +13,11 @@ endpoint:
   name: endpoint2
   input:
     method: get
-    url: /endpoint/{id}
+    url: /endpoint/{id}/{param}
   output:
     code: 200
     body: '{
-        ">|field":" from_ctx(_endpoints.endpoint.input.body.field)",
+        ">|field1":" from_ctx(_endpoints.endpoint.input.body.field)",
+        ">|field2":" from_ctx(_endpoints.endpoint2.input.url.id)",
         "another_field": 1
         }'
