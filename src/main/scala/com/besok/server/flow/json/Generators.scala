@@ -93,10 +93,10 @@ case class ArrayF(f: GeneratorFunction, size: Int) extends GeneratorFunction {
   override def generate: Json = (for (_ <- 1 to size) yield f.generate).toJson
 }
 
-case class WithCtxF(f: GeneratorFunction, key:String)(implicit ctx: GeneratorContext) extends GeneratorFunction {
+case class WithCtxF(f: GeneratorFunction, key: String)(implicit ctx: GeneratorContext) extends GeneratorFunction {
   override def generate: Json = {
     val value = f.generate
-    ctx.put(key,value)
+    ctx.put(key, value)
     value
   }
 }
@@ -107,7 +107,16 @@ case class FromContextF(ctx: GeneratorContext, f: GeneratorContext => Json) exte
 }
 
 object FromContextF {
-  def byName(name: String) = (_: GeneratorContext).get(name)
+  def byName(name: String) = (ctx: GeneratorContext) => {
+    // TODO: looks like a cork ... needs to change
+    if (name.contains("_endpoints") && name.contains("input.body")) {
+      name.split("input.body") match {
+        case Array(l, r) => ctx.get(l + "input.body").query(r).getOrElse(NullValue)
+        case _ => NullValue
+      }
+    }
+    else ctx.get(name)
+  }
 }
 
 class GeneratorParser(val input: ParserInput)(implicit val currCtx: GeneratorContext) extends Parser {
@@ -181,15 +190,15 @@ class GeneratorParser(val input: ParserInput)(implicit val currCtx: GeneratorCon
   }
 
   def funcCtx = rule {
-    name("from_ctx") ~ internalString ~ sp(")") ~> (v => FromContextF(currCtx, _.get(v)))
+    name("from_ctx") ~ internalString ~ sp(")") ~> (v => FromContextF(currCtx, FromContextF.byName(v)))
   }
 
-  def funcArray:Rule1[ArrayF] = rule {
-    name("array") ~ posNum ~ sp(",") ~ function ~ sp(")") ~> ((n:Int, f:GeneratorFunction) => ArrayF(f,n))
+  def funcArray: Rule1[ArrayF] = rule {
+    name("array") ~ posNum ~ sp(",") ~ function ~ sp(")") ~> ((n: Int, f: GeneratorFunction) => ArrayF(f, n))
   }
 
   def function = rule {
-      funcSequence |
+    funcSequence |
       funcCtx |
       funcDate |
       funcUUID |
@@ -203,11 +212,11 @@ class GeneratorParser(val input: ParserInput)(implicit val currCtx: GeneratorCon
       funcArray
   }
 
-  def functionWithCallback: Rule1[GeneratorFunction] = rule{
-    function ~ optional(sp( "=>") ~ ctxVar) ~> ((f:GeneratorFunction, v:Option[String]) => v match {
-     case None => f
-     case Some(vr) => WithCtxF(f,vr)
-   })
+  def functionWithCallback: Rule1[GeneratorFunction] = rule {
+    function ~ optional(sp("=>") ~ ctxVar) ~> ((f: GeneratorFunction, v: Option[String]) => v match {
+      case None => f
+      case Some(vr) => WithCtxF(f, vr)
+    })
   }
 
   def ctxVar = rule {
@@ -219,5 +228,5 @@ class GeneratorParser(val input: ParserInput)(implicit val currCtx: GeneratorCon
 
 object GeneratorParser {
 
-  implicit def stringToParser(input: String)(implicit ctx:GeneratorContext) = new GeneratorParser(input)(ctx)
+  implicit def stringToParser(input: String)(implicit ctx: GeneratorContext) = new GeneratorParser(input)(ctx)
 }

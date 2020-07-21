@@ -2,7 +2,8 @@ package com.besok.server.flow.json
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethod, HttpMethods, HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import org.yaml.snakeyaml.Yaml
@@ -10,7 +11,7 @@ import org.yaml.snakeyaml.Yaml
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.jdk.CollectionConverters._
-import scala.util.Using
+import scala.util.{Success, Using}
 
 class EndpointException(s: String) extends RuntimeException(s)
 
@@ -43,7 +44,7 @@ case class Input(method: HttpMethod, url: String) {
   }
 }
 
-case class Output(code: Int, body: String, prefix: String = ">")(implicit ctx: GeneratorContext) {
+case class Output(code: Int, body: String, prefix: String)(implicit ctx: GeneratorContext) {
 
   var generator: JsonGenerator = JsonGenerator(defineInput, prefix)
 
@@ -102,7 +103,9 @@ case class EndpointTemplateList(templates: Seq[EndpointTemplate], ctx: Generator
     case HttpRequest(m, Uri.Path(p), _, _, _) =>
       for (t <- templates if t.input.method == m) {
         t.input.compare(p) match {
-          case Some(m) => m.foreach { case (k, v) => ctx.put(s"_endpoints.${t.name}.input.url.${k}", v.toJson) }
+          // TODO: change the plain keys to the object since it can be parallel(no lock now)
+          case Some(m) =>
+            m.foreach { case (k, v) => ctx.put(s"_endpoints.${t.name}.input.url.${k}", v.toJson) }
             return Some(t)
           case None => ()
         }
@@ -114,20 +117,35 @@ case class EndpointTemplateList(templates: Seq[EndpointTemplate], ctx: Generator
 }
 
 object Endpoints {
+
+  import JsonParser._
+
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+  implicit val ctx: GeneratorContext = new GeneratorContext
 
   def main(args: Array[String]): Unit = {
-    setup(EndpointTemplateList(Seq(), new GeneratorContext()), 8090)
+    val yaml = scala.io.Source.fromFile("C:\\projects\\test-server-flow\\src\\test\\resources\\endpoints\\endpoint.yml").mkString
+
+    setup(EndpointTemplate.processYaml(yaml), 8090)
   }
 
   def setup(m: EndpointTemplateList, port: Int): Unit = {
     val serverSource = Http().bind(interface = "localhost", port)
     val requestHandler: HttpRequest => HttpResponse = {
-      case r: HttpRequest =>
-        r.discardEntityBytes() // important to drain incoming HTTP Entity stream
-        HttpResponse(404, entity = "Unknown resource!")
+      r: HttpRequest =>
+        m.findBy(r) match {
+          case Some(EndpointTemplate(n, _, o)) =>
+            val resp = o.generateJson.toPrettyString
+            Unmarshal(r.entity).to[String]
+              .map(_.intoJson)
+              .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body",value) }
+            HttpResponse(status = o.code, entity = HttpEntity(contentType = ContentTypes.`application/json`, resp))
+          case None =>
+            r.discardEntityBytes()
+            HttpResponse(404, entity = "Unknown resource!")
+        }
     }
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(

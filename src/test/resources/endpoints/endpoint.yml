@@ -2,12 +2,12 @@
 endpoint:
   name: endpoint1
   input:
-    method: get
+    method: post
     url: /endpoint
   output:
     code: 200
     body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
-    prefix: ">>"
+    prefix: ">"
 ---
 endpoint:
   name: endpoint2
@@ -17,7 +17,8 @@ endpoint:
   output:
     code: 200
     body: '{
-        ">|field1":" from_ctx(_endpoints.endpoint.input.body.field)",
+        ">|field1":" from_ctx(geo.address)",
         ">|field2":" from_ctx(_endpoints.endpoint2.input.url.id)",
-        "another_field": 1
-        }'
+        ">|field3":" from_ctx(_endpoints.endpoint1.input.body.id)",
+        ">|field4":" from_ctx(customer.coming_date)"
+     }'
