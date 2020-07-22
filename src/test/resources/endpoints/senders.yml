@@ -1,0 +1,28 @@
+---
+parcel:
+  name: parcel1
+  address:
+    method: post
+    url: 'http://127.0.0.1:9000/api/parcel1'
+  message:
+    body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
+    prefix: ">"
+  trigger: endpoint(endpoint1)
+---
+parcel:
+  name: parcel2
+  address:
+    method: get
+    url: 'http://127.0.0.1:9000/api/parcel2/{from_ctx(_endpoints.endpoint2.input.url.id)}/send'
+  trigger: every_sec(1)
+---
+parcel:
+  name: parcel3
+  address:
+    method: post
+    url: 'http://127.0.0.1:9000/api/parcel3/{from_ctx(geo.address)}/send'
+  message:
+    body: '{">|id":"seq(10)"}'
+  trigger: times(10)
+
+# trigger : endpoint(name) , every_sec(sec,delay) ,times(num, delay, gap)

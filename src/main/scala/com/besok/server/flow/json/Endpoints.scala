@@ -137,11 +137,13 @@ object Endpoints {
       r: HttpRequest =>
         m.findBy(r) match {
           case Some(EndpointTemplate(n, _, o)) =>
-            val resp = o.generateJson.toPrettyString
             Unmarshal(r.entity).to[String]
               .map(_.intoJson)
-              .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body",value) }
-            HttpResponse(status = o.code, entity = HttpEntity(contentType = ContentTypes.`application/json`, resp))
+              .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body", value) }
+            HttpResponse(
+              status = o.code,
+              entity = HttpEntity(contentType = ContentTypes.`application/json`, o.generateJson.toPrettyString)
+            )
           case None =>
             r.discardEntityBytes()
             HttpResponse(404, entity = "Unknown resource!")
