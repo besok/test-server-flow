@@ -1,0 +1,19 @@
+---
+endpoint:
+  name: endpoint2
+  input:
+    method: post
+    url: /endpoint/path/api
+  output:
+    code: 200
+    body: '{}'
+---
+ndpoint:
+  name: endpoint1
+  input:
+    method: post
+    url: /endpoint/{id}/{param}
+  output:
+    code: 200
+    body: '{}'
+

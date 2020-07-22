@@ -15,16 +15,18 @@ import scala.util.{Success, Using}
 
 class EndpointException(s: String) extends RuntimeException(s)
 
+case class Param(name: String, dyn: Boolean)
+
 case class Input(method: HttpMethod, url: String) {
 
-  case class Param(name: String, dyn: Boolean)
-
   val params: Seq[Param] = url.split("/").map(_.trim).map {
-    p => {
-      if (p.startsWith("{"))
-        Param(p.stripPrefix("{").stripSuffix("}").trim, dyn = true)
+    p =>
+      if (p.startsWith("{")) Param(getP(p), dyn = true)
       else Param(p, dyn = false)
-    }
+  }
+
+  private def getP(p: String) = {
+    p.stripPrefix("{").stripSuffix("}").trim
   }
 
   def compare(input: String): Option[Map[String, String]] = {
@@ -50,6 +52,8 @@ case class Output(code: Int, body: String, prefix: String)(implicit ctx: Generat
 
   def generateJson = generator.newJson
 
+  def stringJson = generateJson.toPrettyString
+
   private def defineInput: String =
     if (body.startsWith("file:"))
       Using(scala.io.Source.fromFile(body.stripPrefix("file:")))(_.mkString).get
@@ -59,10 +63,16 @@ case class Output(code: Int, body: String, prefix: String)(implicit ctx: Generat
 
 case class EndpointTemplate(name: String, input: Input, output: Output)
 
-object EndpointTemplate {
+object EndpointManager {
 
-  def processYaml(input: String)(implicit ctx: GeneratorContext): EndpointTemplateList =
-    EndpointTemplateList(new Yaml().loadAll(input).asScala.map(fromYaml).toSeq, ctx)
+  def apply(input: String)(implicit ctx: GeneratorContext): EndpointManager =
+    EndpointManager(
+      new Yaml()
+        .loadAll(input)
+        .asScala
+        .map(fromYaml)
+        .toSeq,
+      ctx)
 
   def fromYaml(params: AnyRef)(implicit ctx: GeneratorContext): EndpointTemplate = {
 
@@ -95,9 +105,11 @@ object EndpointTemplate {
   }
 }
 
-case class EndpointTemplateList(templates: Seq[EndpointTemplate], ctx: GeneratorContext) {
+case class EndpointManager(templates: Seq[EndpointTemplate], ctx: GeneratorContext) {
 
   import Json._
+
+  checkDuplicates
 
   def findBy(r: HttpRequest): Option[EndpointTemplate] = r match {
     case HttpRequest(m, Uri.Path(p), _, _, _) =>
@@ -113,7 +125,25 @@ case class EndpointTemplateList(templates: Seq[EndpointTemplate], ctx: Generator
       None
   }
 
+  private def checkDuplicates: Unit = {
+    templates
+      .groupBy(_.input.params.length).values
+      .foreach { s =>
+        for (l <- s; r <- s if r != l && l.input.method == r.input.method) {
+          compareInputs(l, r)
+        }
+      }
+  }
 
+  private def compareInputs(left: EndpointTemplate, right: EndpointTemplate): Unit = {
+    for (pair <- left.input.params.zip(right.input.params)) {
+      pair match {
+        case (Param(nl, false), Param(rl, false)) => if (!nl.equals(rl)) return
+        case _ => ()
+      }
+    }
+    throw new EndpointException(s"params: ${left.name} and ${right.name} has the equality regarding url")
+  }
 }
 
 object Endpoints {
@@ -127,38 +157,28 @@ object Endpoints {
 
   def main(args: Array[String]): Unit = {
     val yaml = scala.io.Source.fromFile("C:\\projects\\test-server-flow\\src\\test\\resources\\endpoints\\endpoint.yml").mkString
-
-    setup(EndpointTemplate.processYaml(yaml), 8090)
+    setup(EndpointManager(yaml), 8090)
   }
 
-  def setup(m: EndpointTemplateList, port: Int): Unit = {
-    val serverSource = Http().bind(interface = "localhost", port)
-    val requestHandler: HttpRequest => HttpResponse = {
-      r: HttpRequest =>
-        m.findBy(r) match {
-          case Some(EndpointTemplate(n, _, o)) =>
-            Unmarshal(r.entity).to[String]
-              .map(_.intoJson)
-              .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body", value) }
-            HttpResponse(
-              status = o.code,
-              entity = HttpEntity(contentType = ContentTypes.`application/json`, o.generateJson.toPrettyString)
-            )
-          case None =>
-            r.discardEntityBytes()
-            HttpResponse(404, entity = "Unknown resource!")
-        }
-    }
-    val bindingFuture: Future[Http.ServerBinding] =
-      serverSource.to(
-        Sink.foreach { connection =>
-          connection handleWithSyncHandler requestHandler
-        }
-      ).run()
+  def setup(m: EndpointManager, port: Int): Unit = {
+    Http()
+      .bind(interface = "localhost", port)
+      .to(Sink.foreach(_ handleWithSyncHandler createEndPoints(m)))
+      .run()
   }
 
-  private def notFound(r: HttpRequest) = {
-    r.discardEntityBytes()
-    HttpResponse(404, entity = "Unknown resource!")
+  private def createEndPoints(m: EndpointManager) = {
+    r: HttpRequest =>
+      m.findBy(r) match {
+        case Some(EndpointTemplate(n, _, o)) =>
+          Unmarshal(r.entity).to[String]
+            .map(_.intoJson)
+            .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body", value) }
+          HttpResponse(o.code, entity = HttpEntity(ContentTypes.`application/json`, o.stringJson))
+        case None =>
+          r.discardEntityBytes()
+          HttpResponse(404, entity = "Unknown resource!")
+      }
   }
+
 }

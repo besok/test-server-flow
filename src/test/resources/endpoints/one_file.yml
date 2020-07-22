@@ -1,4 +1,28 @@
 ---
+endpoint:
+  name: endpoint1
+  input:
+    method: post
+    url: /endpoint
+  output:
+    code: 200
+    body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
+    prefix: ">"
+---
+endpoint:
+  name: endpoint2
+  input:
+    method: get
+    url: /endpoint/{id}/{param}
+  output:
+    code: 200
+    body: '{
+        ">|field1":" from_ctx(geo.address)",
+        ">|field2":" from_ctx(_endpoints.endpoint2.input.url.id)",
+        ">|field3":" from_ctx(_endpoints.endpoint1.input.body.id)",
+        ">|field4":" from_ctx(customer.coming_date)"
+     }'
+---
 parcel:
   name: parcel1
   receiver:

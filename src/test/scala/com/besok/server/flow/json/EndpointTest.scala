@@ -8,10 +8,10 @@ import org.scalatest.FunSuite
 class EndpointTest extends FunSuite {
   implicit val ctx: GeneratorContext = new GeneratorContext()
 
-  test("manager"){
+  test("manager") {
     val yaml = Source.fromResource("endpoints/endpoint.yml").mkString
-    val manager = EndpointTemplate.processYaml(yaml)
-    val endpoint = manager.findBy(HttpRequest(uri = Uri("/endpoint")))
+    val manager = EndpointManager(yaml)
+    val endpoint = manager.findBy(HttpRequest(method = HttpMethods.POST, uri = Uri("/endpoint")))
     assert(endpoint.nonEmpty)
     assert(endpoint.map(e => e.name).exists(_.equals("endpoint1")))
 
@@ -26,13 +26,72 @@ class EndpointTest extends FunSuite {
 
   test("yaml") {
     val yaml = Source.fromResource("endpoints/endpoint.yml").mkString
-    val tmpls = EndpointTemplate.processYaml(yaml)
+    val tmpls = EndpointManager(yaml)
     assert(tmpls.templates.size == 2)
   }
 
   test("input") {
     val input = Input(HttpMethods.GET, "/abc/abc/{abc}/bcd")
     assert(input.compare("/abc/abc/{abc}/bcd/1").isEmpty)
-    assert(input.compare("/abc/abc/bcd/bcd").contains(Map("abc" -> "bcd")))
+    assert(input.compare("/abc/abc/bcd/bcd").contains(Map("" -> "", "abc" -> "bcd")))
+  }
+
+  test("duplicate") {
+    assertThrows[EndpointException] {
+      EndpointManager(
+        """---
+          |endpoint:
+          |  name: endpoint2
+          |  input:
+          |    method: post
+          |    url: /endpoint/path/api
+          |  output:
+          |    code: 200
+          |    body: '{}'
+          |---
+          |endpoint:
+          |  name: endpoint1
+          |  input:
+          |    method: post
+          |    url: /endpoint/{id}/{param}
+          |  output:
+          |    code: 200
+          |    body: '{}'
+          |
+          |""".stripMargin)
+    }
+    EndpointManager(
+      """---
+        |endpoint:
+        |  name: endpoint2
+        |  input:
+        |    method: get
+        |    url: /endpoint/path/api
+        |  output:
+        |    code: 200
+        |    body: '{}'
+        |---
+        |endpoint:
+        |  name: endpoint1
+        |  input:
+        |    method: post
+        |    url: /endpoint/{id}/{param}
+        |  output:
+        |    code: 200
+        |    body: '{}'
+        |
+        |""".stripMargin)
+    EndpointManager(
+      """---
+        |endpoint:
+        |  name: endpoint2
+        |  input:
+        |    method: post
+        |    url: /endpoint/path/api
+        |  output:
+        |    code: 200
+        |    body: '{}'
+        |
+        |""".stripMargin)
   }
 }
