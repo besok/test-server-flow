@@ -3,22 +3,21 @@ package com.besok.server.flow.json
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import org.yaml.snakeyaml.Yaml
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContextExecutor
 import scala.jdk.CollectionConverters._
-import scala.util.{Success, Using}
+import scala.util.Success
 
 class EndpointException(s: String) extends RuntimeException(s)
 
 case class Param(name: String, dyn: Boolean)
 
-case class Input(method: HttpMethod, url: String) {
-
+case class StringUrl(url: String) {
   val params: Seq[Param] = url.split("/").map(_.trim).map {
     p =>
       if (p.startsWith("{")) Param(getP(p), dyn = true)
@@ -29,11 +28,15 @@ case class Input(method: HttpMethod, url: String) {
     p.stripPrefix("{").stripSuffix("}").trim
   }
 
+}
+
+
+case class Input(method: HttpMethod, url: StringUrl) {
   def compare(input: String): Option[Map[String, String]] = {
     val inParams = input.split("/")
-    if (inParams.length == params.length) {
+    if (inParams.length == url.params.length) {
       Some(
-        (for ((in, p) <- inParams.zip(params)) yield {
+        (for ((in, p) <- inParams.zip(url.params)) yield {
           p match {
             case Param(n, false) => if (!n.equals(in)) return None else ("", "")
             case Param(n, true) => (n, in)
@@ -48,16 +51,9 @@ case class Input(method: HttpMethod, url: String) {
 
 case class Output(code: Int, body: String, prefix: String)(implicit ctx: GeneratorContext) {
 
-  var generator: JsonGenerator = JsonGenerator(defineInput, prefix)
+  var generator: JsonGenerator = JsonGenerator.fromFile(body, prefix)
 
-  def generateJson = generator.newJson
-
-  def stringJson = generateJson.toPrettyString
-
-  private def defineInput: String =
-    if (body.startsWith("file:"))
-      Using(scala.io.Source.fromFile(body.stripPrefix("file:")))(_.mkString).get
-    else body
+  def stringJson = generator.newJsonString
 
 }
 
@@ -65,14 +61,10 @@ case class EndpointTemplate(name: String, input: Input, output: Output)
 
 object EndpointManager {
 
+  import YamlHelper._
+
   def apply(input: String)(implicit ctx: GeneratorContext): EndpointManager =
-    EndpointManager(
-      new Yaml()
-        .loadAll(input)
-        .asScala
-        .map(fromYaml)
-        .toSeq,
-      ctx)
+    EndpointManager(load(input).map(fromYaml).toSeq, ctx)
 
   def fromYaml(params: AnyRef)(implicit ctx: GeneratorContext): EndpointTemplate = {
 
@@ -87,21 +79,9 @@ object EndpointManager {
 
     EndpointTemplate(
       get(map, "name"),
-      Input(method(get(input, "method")), get(input, "url")),
+      Input(method(get(input, "method")), StringUrl(get(input, "url"))),
       Output(get(output, "code"), get(output, "body"), prefix)
     )
-  }
-
-  def method(s: String): HttpMethod = s.toLowerCase match {
-    case "post" => HttpMethods.POST
-    case "get" => HttpMethods.GET
-    case "delete" => HttpMethods.DELETE
-    case "put" => HttpMethods.PUT
-    case _ => throw new EndpointException("the http method does not exist ")
-  }
-
-  private def get[T](m: mutable.Map[String, Object], k: String): T = {
-    m.getOrElse(k, throw new EndpointException(s"the param $k should exist")).asInstanceOf[T]
   }
 }
 
@@ -127,7 +107,7 @@ case class EndpointManager(templates: Seq[EndpointTemplate], ctx: GeneratorConte
 
   private def checkDuplicates: Unit = {
     templates
-      .groupBy(_.input.params.length).values
+      .groupBy(_.input.url.params.length).values
       .foreach { s =>
         for (l <- s; r <- s if r != l && l.input.method == r.input.method) {
           compareInputs(l, r)
@@ -136,7 +116,7 @@ case class EndpointManager(templates: Seq[EndpointTemplate], ctx: GeneratorConte
   }
 
   private def compareInputs(left: EndpointTemplate, right: EndpointTemplate): Unit = {
-    for (pair <- left.input.params.zip(right.input.params)) {
+    for (pair <- left.input.url.params.zip(right.input.url.params)) {
       pair match {
         case (Param(nl, false), Param(rl, false)) => if (!nl.equals(rl)) return
         case _ => ()
@@ -181,4 +161,21 @@ object Endpoints {
       }
   }
 
+}
+
+object YamlHelper {
+
+  def load(input: String) = new Yaml().loadAll(input).asScala
+
+  def get[T](m: mutable.Map[String, Object], k: String): T = {
+    m.getOrElse(k, throw new EndpointException(s"the param $k should exist")).asInstanceOf[T]
+  }
+
+  def method(s: String): HttpMethod = s.toLowerCase match {
+    case "post" => HttpMethods.POST
+    case "get" => HttpMethods.GET
+    case "delete" => HttpMethods.DELETE
+    case "put" => HttpMethods.PUT
+    case _ => throw new EndpointException("the http method does not exist ")
+  }
 }

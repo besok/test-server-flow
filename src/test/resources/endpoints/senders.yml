@@ -14,6 +14,8 @@ parcel:
   receiver:
     method: get
     url: 'http://127.0.0.1:9000/api/parcel2/{_endpoints.endpoint2.input.url.id}/send'
+  message:
+    body: '{">|id":"uuid() => [p2.id]"}'
   trigger: every_sec(1)
 ---
 parcel:
@@ -25,4 +27,3 @@ parcel:
     body: '{">|id":"seq(10)"}'
   trigger: times(10)
 
-# trigger : endpoint(name) , every_sec(sec,delay) ,times(num, delay, gap) , parcel(name)

@@ -1,7 +1,8 @@
 package com.besok.server.flow.json
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Using}
 
+case class JsonException(s:String, ex:Throwable) extends RuntimeException(s,ex)
 
 case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit ctx: GeneratorContext) {
 
@@ -9,6 +10,8 @@ case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit c
   import GeneratorParser._
 
   val template: Json = retrieveJsonFrom(inputTemplate, prefix)
+
+  def newJsonString = newJson.toPrettyString
 
   def newJson = generateJson(template)
 
@@ -24,7 +27,7 @@ case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit c
             case StringValue(fun) => if (k.startsWith(prefix)) {
               fun.functionWithCallback.run() match {
                 case Success(fn) => v.f = Some(fn); (k.stripPrefix(prefix), v)
-                case Failure(exception) => throw exception
+                case Failure(exception) => throw JsonException(s" error: $fun", exception)
               }
             } else (k, v)
             case js@ObjectValue(_) => (k, retrieveJson(js, prefix))
@@ -57,5 +60,12 @@ case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit c
 }
 
 object JsonGenerator {
-  implicit def stringToJsonHandler(i:String)(implicit ctx:GeneratorContext) = JsonGenerator(i)
+  implicit def stringToJsonHandler(i: String)(implicit ctx: GeneratorContext) = JsonGenerator(i)
+
+  def fromFile(body: String, prefix: String)(implicit ctx: GeneratorContext): JsonGenerator =
+    JsonGenerator(
+      if (body.startsWith("file:"))
+        Using(scala.io.Source.fromFile(body.stripPrefix("file:")))(_.mkString).get
+      else body,
+      prefix)
 }

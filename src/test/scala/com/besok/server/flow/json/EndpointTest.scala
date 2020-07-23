@@ -31,7 +31,7 @@ class EndpointTest extends FunSuite {
   }
 
   test("input") {
-    val input = Input(HttpMethods.GET, "/abc/abc/{abc}/bcd")
+    val input = Input(HttpMethods.GET, StringUrl("/abc/abc/{abc}/bcd"))
     assert(input.compare("/abc/abc/{abc}/bcd/1").isEmpty)
     assert(input.compare("/abc/abc/bcd/bcd").contains(Map("" -> "", "abc" -> "bcd")))
   }
