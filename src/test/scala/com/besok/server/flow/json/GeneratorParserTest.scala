@@ -9,7 +9,7 @@ object T extends ParserTester {
 }
 
 class GeneratorParserTest extends FunSuite {
-  implicit var ctx: GeneratorContext = new GeneratorContext()
+  implicit var ctx: GeneratorContext = new GeneratorContextMap()
   test("sequence") {
     T.test(_.funcSequence.run()) {
       (" seq ( 1 ) ", (f: SequenceF) => assert(f.generate == 1.toJson))

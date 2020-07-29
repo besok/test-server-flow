@@ -1,17 +1,10 @@
 package com.besok.server.flow.json
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
 import org.yaml.snakeyaml.Yaml
 
 import scala.collection.mutable
-import scala.concurrent.ExecutionContextExecutor
 import scala.jdk.CollectionConverters._
-import scala.util.Success
 
 class EndpointException(s: String) extends RuntimeException(s)
 
@@ -126,42 +119,6 @@ case class EndpointManager(templates: Seq[EndpointTemplate], ctx: GeneratorConte
   }
 }
 
-object Endpoints {
-
-  import JsonParser._
-
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
-  implicit val ctx: GeneratorContext = new GeneratorContext
-
-  def main(args: Array[String]): Unit = {
-    val yaml = scala.io.Source.fromFile("C:\\projects\\test-server-flow\\src\\test\\resources\\endpoints\\endpoint.yml").mkString
-    setup(EndpointManager(yaml), 8090)
-  }
-
-  def setup(m: EndpointManager, port: Int): Unit = {
-    Http()
-      .bind(interface = "localhost", port)
-      .to(Sink.foreach(_ handleWithSyncHandler createEndPoints(m)))
-      .run()
-  }
-
-  private def createEndPoints(m: EndpointManager) = {
-    r: HttpRequest =>
-      m.findBy(r) match {
-        case Some(EndpointTemplate(n, _, o)) =>
-          Unmarshal(r.entity).to[String]
-            .map(_.intoJson)
-            .andThen { case Success(value) => ctx.put(s"_endpoints.$n.input.body", value) }
-          HttpResponse(o.code, entity = HttpEntity(ContentTypes.`application/json`, o.stringJson))
-        case None =>
-          r.discardEntityBytes()
-          HttpResponse(404, entity = "Unknown resource!")
-      }
-  }
-
-}
 
 object YamlHelper {
 

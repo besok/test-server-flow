@@ -6,25 +6,15 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import Json._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
+import com.besok.server.flow.json.Json._
 import org.parboiled2.{Parser, ParserInput}
 
 import scala.io.Source
 import scala.reflect.ClassTag
 import scala.util.{Random, Using}
 
-class GeneratorContext {
-  type Key = String
-  private val objects = new ConcurrentHashMap[Key, Json]()
-
-  def get(key: String): Json = {
-    Option(objects.get(key)).getOrElse(NullValue)
-  }
-
-  def put(key: String, value: Json): Option[Json] = Option(
-    objects.put(key, if (value == null) NullValue else value)
-  )
-}
 
 sealed trait GeneratorFunction {
   def generate: Json
@@ -52,7 +42,7 @@ case class StringF(len: Int) extends GeneratorFunction {
 case class NumberF(start: Int, end: Int) extends GeneratorFunction {
   var r: Random = new Random
   if (start >= end) {
-    throw new JsonException
+    throw JsonException(s" $start should less then $end", new IllegalArgumentException)
   }
 
   override def generate: Json = (start + r.nextInt(end - start)).toJson

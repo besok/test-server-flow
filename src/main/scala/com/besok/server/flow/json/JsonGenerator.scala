@@ -2,7 +2,7 @@ package com.besok.server.flow.json
 
 import scala.util.{Failure, Success, Using}
 
-case class JsonException(s:String, ex:Throwable) extends RuntimeException(s,ex)
+case class JsonException(s: String, ex: Throwable) extends RuntimeException(s, ex)
 
 case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit ctx: GeneratorContext) {
 
@@ -16,7 +16,10 @@ case class JsonGenerator(inputTemplate: String, prefix: String = ">")(implicit c
   def newJson = generateJson(template)
 
   private def retrieveJsonFrom(input: String, prefix: String): Json = {
-    retrieveJson(input.intoJson, prefix + "|")
+    input.intoJson match {
+      case Success(v) => retrieveJson(v, prefix + "|")
+      case Failure(exception) => throw JsonException(s"exception in $input", exception)
+    }
   }
 
   private def retrieveJson(json: Json, prefix: String): Json = {

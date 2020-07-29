@@ -35,7 +35,6 @@ abstract sealed class Json(var f: Option[GeneratorFunction]) {
 
 }
 
-class JsonException extends RuntimeException
 
 object Json {
 
@@ -99,7 +98,7 @@ object Json {
       case v: Boolean => BooleanValue(v)
       case v: Map[String, Json] => ObjectValue(v)
       case v: Seq[Json] => ArrayValue(v)
-      case _: Any => throw new JsonException()
+      case v: Any => throw JsonException(s"unexpected type:$v", new IllegalArgumentException)
     }
   }
 
@@ -214,10 +213,7 @@ class JsonParser(val input: ParserInput) extends Parser with StringBuilding {
 
   def FileJson = rule(zeroOrMore(WhiteSpaceChar) ~ Value ~ EOI)
 
-  def intoJson: Json = FileJson.run() match {
-    case Success(value) => value
-    case Failure(exception) => throw exception
-  }
+  def intoJson = FileJson.run()
 }
 
 object JsonParser {

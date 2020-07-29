@@ -119,7 +119,7 @@ class JsonParserTest extends FunSuite {
   }
 
   test("simple") {
-    assert("""{"a": "abc\"abc"}""".intoJson == ObjectValue(Map("a" -> StringValue("abc\\\"abc"))))
+    assert("""{"a": "abc\"abc"}""".intoJson.get == ObjectValue(Map("a" -> StringValue("abc\\\"abc"))))
   }
 
   test("number") {
@@ -140,7 +140,7 @@ class JsonParserTest extends FunSuite {
     import scala.io.Source
     val txt = Source.fromResource("jsons/example_standart.json").mkString
 
-    val json = txt.intoJson
+    val json = txt.intoJson.get
 
     json.query("complex.objects.simple.id") match {
       case None => fail()

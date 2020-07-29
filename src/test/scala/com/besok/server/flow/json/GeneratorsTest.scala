@@ -103,7 +103,7 @@ class GeneratorsTest extends FunSuite {
 
   test("from_ctx"){
 
-    val f = FromContextF(new GeneratorContext {
+    val f = FromContextF(new GeneratorContextMap {
       override def get(key: String): Json = 100.toJson
 
       override def put(key: String, value: Json): Option[Json] = ???

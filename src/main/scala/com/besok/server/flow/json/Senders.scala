@@ -1,15 +1,33 @@
 package com.besok.server.flow.json
 
-import akka.http.scaladsl.model.HttpMethod
+import java.time.Duration
+
+import akka.actor.{Actor, ActorSystem}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
 
 import scala.jdk.CollectionConverters._
 
-case class Parcel(name: String, receiver: Receiver, message: Message, trigger: Trigger)
+case class Parcel(name: String, receiver: Receiver, message: Message, trigger: Trigger)(implicit ctx: GeneratorContext) {
+
+  def request = HttpRequest(
+    method = receiver.m,
+    Uri(url),
+    entity = HttpEntity(contentType = ContentTypes.`application/json`, string = message.stringJson)
+  )
+
+  def url: String =
+    receiver.url.params
+      .map { p => if (p.dyn) ctx.get(p.name).toString else p.name }
+      .mkString("/")
+}
 
 case class Receiver(m: HttpMethod, url: StringUrl)
 
 case class Message(body: String, prefix: String)(implicit ctx: GeneratorContext) {
   var generator: JsonGenerator = JsonGenerator.fromFile(body, prefix)
+
+  def stringJson: String = generator.newJsonString
 }
 
 sealed abstract class Trigger(name: String)
@@ -19,23 +37,6 @@ object Trigger {
     case Array(l, r) => l.trim match {
       case "endpoint" => EndpointTrigger(r.stripSuffix(")").trim)
       case "parcel" => ParcelTrigger(r.stripSuffix(")").trim)
-      case "every_sec" =>
-        val args = r.stripSuffix(")").trim.split(",")
-        if (args.length > 2) {
-          throw new EndpointException(s" the func every_sec should have no more than 2 arg namely number of sec and delay before start but got: $trigger")
-        }
-        if (args.length == 2) {
-          EverySecTrigger(args(0).trim.toInt, args(1).trim.toInt)
-        } else if (args.length == 1) {
-          val a = args(0).trim
-          if (a.equals("")) {
-            EverySecTrigger(1, 0)
-          } else {
-            EverySecTrigger(a.toInt, 0)
-          }
-        } else {
-          EverySecTrigger(0, 0)
-        }
       case "times" =>
         val args = r.stripSuffix(")").trim.split(",")
         if (args.length > 3) {
@@ -61,22 +62,25 @@ object Trigger {
   }
 }
 
+
 case class EndpointTrigger(name: String) extends Trigger("endpoint")
-
-case class EverySecTrigger(gap: Int, delay: Int) extends Trigger("every_sec")
-
-case class TimesTrigger(num: Int, gap: Int, delay: Int) extends Trigger("times")
 
 case class ParcelTrigger(name: String) extends Trigger("parcel")
 
-case class ParcelManager(parcels: Seq[Parcel])
+case class TimesTrigger(num: Int, gap: Int, delay: Int) extends Trigger("times")
 
-object ParcelManager {
+case class Parcels(parcels: Seq[Parcel]) {
+  val triggers: Map[Trigger, Seq[Parcel]] = parcels.groupBy(_.trigger)
+
+  def find(t: Trigger): Seq[Parcel] = triggers.getOrElse(t, Seq())
+}
+
+object Parcels {
 
   import YamlHelper._
 
-  def apply(input: String)(implicit ctx: GeneratorContext): ParcelManager = {
-    ParcelManager(load(input).map(fromYaml).toSeq)
+  def apply(input: String)(implicit ctx: GeneratorContext): Parcels = {
+    Parcels(load(input).map(fromYaml).toSeq)
   }
 
   def fromYaml(params: AnyRef)(implicit ctx: GeneratorContext): Parcel = {
@@ -96,6 +100,26 @@ object ParcelManager {
       Trigger(get(map, "trigger"))
     )
   }
-
-
 }
+
+class OnceSendParcelActor extends Actor {
+  override type Receive = Parcel
+  implicit val actorSystem: ActorSystem = context.system
+
+  override def receive: Actor.Receive = {
+    case r: Parcel => Http().singleRequest(r.request)
+  }
+}
+
+class ScheduledSendParcelActor extends Actor {
+  override type Receive = Parcel
+
+
+  override def receive: Actor.Receive = {
+    case r@Parcel(_, _, _, TimesTrigger(num, gap, delay)) =>
+      for (_ <- 0 to num) {
+      }
+    case _ => ()
+  }
+}
+

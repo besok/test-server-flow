@@ -6,7 +6,7 @@ import scala.io.Source
 import org.scalatest.FunSuite
 
 class EndpointTest extends FunSuite {
-  implicit val ctx: GeneratorContext = new GeneratorContext()
+  implicit val ctx: GeneratorContext = new GeneratorContextMap()
 
   test("manager") {
     val yaml = Source.fromResource("endpoints/endpoint.yml").mkString

@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 
 class HandlerTest extends FunSuite {
   import JsonGenerator._
-  implicit val ctx:GeneratorContext = new GeneratorContext()
+  implicit val ctx:GeneratorContext = new GeneratorContextMap()
 
   test("test"){
     import scala.io.Source
