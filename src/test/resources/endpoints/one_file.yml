@@ -27,26 +27,26 @@ parcel:
   name: parcel1
   receiver:
     method: post
-    url: 'http://127.0.0.1:9000/api/parcel1'
+    url: 'http://localhost:9000/api/parcel1'
   message:
     body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
     prefix: ">"
-  trigger: endpoint(endpoint1)
+  trigger: endpoint(endpoint2)
 ---
 parcel:
   name: parcel2
   receiver:
     method: get
-    url: 'http://127.0.0.1:9000/api/parcel2/{_endpoints.endpoint2.input.url.id}/send'
-  trigger: every_sec(1)
+    url: 'http://localhost:9000/api/parcel2/{_endpoints.endpoint2.input.url.id}/send'
+  trigger: parcel(parcel1)
 ---
 parcel:
   name: parcel3
   receiver:
     method: post
-    url: 'http://127.0.0.1:9000/api/parcel3/{geo.address}/send'
+    url: 'http://localhost:9000/api/parcel3/send'
   message:
     body: '{">|id":"seq(10)"}'
-  trigger: times(10)
+  trigger: times(2,1,1)
 
-# trigger : endpoint(name) , every_sec(sec,delay) ,times(num, delay, gap) , parcel(name)
+# trigger : endpoint(name)  ,times(num, delay, gap) , parcel(name)

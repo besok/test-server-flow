@@ -1,0 +1,15 @@
+---
+parcel:
+  name: P_5
+  receiver:
+    method: post
+    url: ''
+  trigger: times(5)
+---
+parcel:
+  name: P_3_2_2
+  receiver:
+    method: post
+    url: ''
+  trigger: times(3,2,2)
+

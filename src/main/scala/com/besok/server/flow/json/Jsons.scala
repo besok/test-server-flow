@@ -3,7 +3,6 @@ package com.besok.server.flow.json
 import org.parboiled2.{Parser, ParserInput, StringBuilding}
 
 import scala.language.implicitConversions
-import scala.util.{Failure, Success}
 
 
 abstract sealed class Json(var f: Option[GeneratorFunction]) {
@@ -15,6 +14,11 @@ abstract sealed class Json(var f: Option[GeneratorFunction]) {
     case BooleanValue(v) => v.toString
     case ArrayValue(arr) => s"""[${arr.mkString(",")}]"""
     case o@ObjectValue(_) => s"""{${Json.mapToString(o)}}"""
+  }
+
+  def onlyString = this match {
+    case StringValue(v) => v
+    case js => js.toString
   }
 
   def query(path: String): Option[Json] = {
