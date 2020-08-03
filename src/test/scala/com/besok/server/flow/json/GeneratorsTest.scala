@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 
 import org.scalatest.FunSuite
 import Json._
+
 class GeneratorsTest extends FunSuite {
 
   test("seq") {
@@ -78,22 +79,22 @@ class GeneratorsTest extends FunSuite {
 
 
     (v1, v2) match {
-      case (StringValue(v1),StringValue(v2)) => {
+      case (StringValue(v1), StringValue(v2)) => {
         assert(v1 != v2)
         assert(v1.length == 36)
       }
     }
   }
 
-  test("date"){
+  test("date") {
     val f = DateF(new SimpleDateFormat().toPattern)
     f.generate match {
       case StringValue(v) => assert(v.length == 15)
     }
   }
 
-  test("array"){
-    val inF = NumberF(1,100)
+  test("array") {
+    val inF = NumberF(1, 100)
     val f = ArrayF(inF, 10)
 
     f.generate match {
@@ -101,13 +102,15 @@ class GeneratorsTest extends FunSuite {
     }
   }
 
-  test("from_ctx"){
+  test("from_ctx") {
 
     val f = FromContextF(new GeneratorContextMap {
       override def get(key: String): Json = 100.toJson
 
-      override def put(key: String, value: Json): Option[Json] = ???
-    },_.get(""))
+      override def put(key: String, value: Json): Json = ???
+
+      override def putMap(map: Map[String, Json]): Unit = super.putMap(map)
+    }, _.get(""))
 
     assert(f.generate == IntValue(100))
   }

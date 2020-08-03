@@ -93,9 +93,14 @@ object SystemConfigurer {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   implicit val timeout: Timeout = Timeout(10.seconds)
 
-  implicit val ctx: GeneratorContext = new GeneratorContextMap
+  implicit val ctx: GeneratorContext = setupGeneratorContext()
+
+  def setupGeneratorContext(): GeneratorContext = {
+    new GeneratorContextProxy(system.actorOf(Props[GeneratorContextActor]))
+  }
 
   def setup(input: String, port: Int): Unit = {
+
     setupEndpoints(
       EndpointManager(input),
       port,
