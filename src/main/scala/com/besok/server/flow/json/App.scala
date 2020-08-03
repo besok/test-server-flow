@@ -16,7 +16,7 @@ object App {
         val yaml = Using(Source.fromFile(config.input))(_.mkString).get
         SystemConfigurer.setup(yaml, 8090)
       case _ =>
-      // arguments are bad, error message will have been displayed
+        println("arguments need to be reconsidered")
     }
   }
 

@@ -8,7 +8,6 @@ import akka.util.Timeout
 import akka.pattern.ask
 
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 trait GeneratorContext {
 
@@ -58,7 +57,7 @@ class GeneratorContextActor extends Actor {
   }
 }
 
-class GeneratorContextProxy(delegate: ActorRef)(implicit execCtx: ExecutionContext) extends GeneratorContext {
+class GeneratorContextActorProxy(delegate: ActorRef)(implicit execCtx: ExecutionContext) extends GeneratorContext {
   implicit val timeout: Timeout = Timeout(3.seconds)
 
   override def get(key: String): Json =

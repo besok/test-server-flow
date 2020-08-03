@@ -96,7 +96,7 @@ object SystemConfigurer {
   implicit val ctx: GeneratorContext = setupGeneratorContext()
 
   def setupGeneratorContext(): GeneratorContext = {
-    new GeneratorContextProxy(system.actorOf(Props[GeneratorContextActor]))
+    new GeneratorContextActorProxy(system.actorOf(Props[GeneratorContextActor]))
   }
 
   def setup(input: String, port: Int): Unit = {
