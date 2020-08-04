@@ -13,6 +13,10 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
+/**
+ * The actor to send the parcel to the endpoint
+ * @see Parcel
+ */
 class SendParcelActor extends Actor {
   implicit val actorSystem: ActorSystem = context.system
   val logger: Logger = Logger[SendParcelActor]
@@ -33,6 +37,10 @@ class SendParcelActor extends Actor {
   }
 }
 
+/**
+ * The actor to schedule recurring events
+ * @param parcelSender the ref to the sender actor @see SendParcelActor
+ */
 case class ScheduledParcelActor(parcelSender: ActorRef) extends Actor {
   implicit val ex: ExecutionContextExecutor = context.system.dispatcher
   private val scheduler: Scheduler = context.system.scheduler
@@ -50,6 +58,11 @@ case class ScheduledParcelActor(parcelSender: ActorRef) extends Actor {
   }
 }
 
+/**
+ * The actor to process the parcels in general
+ * @param parcelSender  the ref to the sender actor @see SendParcelActor
+ * @param parcels the list of parcels @see Parcels
+ */
 case class ParcelProcessorActor(parcelSender: ActorRef, parcels: Parcels) extends Actor {
   implicit val ex: ExecutionContextExecutor = context.system.dispatcher
   val logger: Logger = Logger[ParcelProcessorActor]

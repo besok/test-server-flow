@@ -1,7 +1,6 @@
 package com.besok.server.flow.json
 
 import akka.http.scaladsl.model._
-import com.typesafe.scalalogging.Logger
 import org.yaml.snakeyaml.Yaml
 
 import scala.collection.mutable

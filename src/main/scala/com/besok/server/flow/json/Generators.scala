@@ -4,10 +4,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.Behaviors
 import com.besok.server.flow.json.Json._
 import org.parboiled2.{Parser, ParserInput}
 
@@ -15,7 +12,9 @@ import scala.io.Source
 import scala.reflect.ClassTag
 import scala.util.{Random, Using}
 
-
+/**
+ * The function which represents the generator
+ */
 sealed trait GeneratorFunction {
   def generate: Json
 }

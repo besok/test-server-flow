@@ -10,6 +10,9 @@ import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
+/**
+ * The context to store all parameters incoming and generating
+ */
 trait GeneratorContext {
 
   def get(key: String): Json
