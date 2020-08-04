@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResp
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -14,6 +15,7 @@ import scala.util.{Failure, Success}
 
 class SendParcelActor extends Actor {
   implicit val actorSystem: ActorSystem = context.system
+  val logger: Logger = Logger[SendParcelActor]
 
   override def receive: Actor.Receive = {
     case SendRequest(p) =>
@@ -25,8 +27,9 @@ class SendParcelActor extends Actor {
   }
 
   def send(p: Parcel) = {
-    println(s"send p:$p")
-    Http() singleRequest p.request
+    val request = p.request
+    logger.debug(s"send request: $request")
+    Http() singleRequest request
   }
 }
 
@@ -49,14 +52,13 @@ case class ScheduledParcelActor(parcelSender: ActorRef) extends Actor {
 
 case class ParcelProcessorActor(parcelSender: ActorRef, parcels: Parcels) extends Actor {
   implicit val ex: ExecutionContextExecutor = context.system.dispatcher
-
+  val logger: Logger = Logger[ParcelProcessorActor]
   override def receive: Actor.Receive = {
     case EventSendRequest(t) =>
       parcels.find(t).foreach(parcelSender ! SendRequest(_))
 
     case InitScheduledTriggers =>
-      parcels
-        .triggers
+      parcels.triggers
         .filter {
           case (_: TimesTrigger, _) => true
           case _ => false
@@ -66,6 +68,7 @@ case class ParcelProcessorActor(parcelSender: ActorRef, parcels: Parcels) extend
             triggeredParcels.foreach {
               p: Parcel =>
                 val ref = context.system.actorOf(Props(ScheduledParcelActor(parcelSender)))
+                logger.debug(s" new scheduled parcer actor has been created for parcel:$p")
                 ref ! ScheduledSendRequest(p, 0)
             }
         }
@@ -86,21 +89,20 @@ case class ScheduledSendResponse(p: Parcel, curr: Int) extends ParcelMessage
 case object InitScheduledTriggers extends ParcelMessage
 
 object SystemConfigurer {
-
   import JsonParser._
 
   implicit val system: ActorSystem = ActorSystem()
+
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
   implicit val timeout: Timeout = Timeout(10.seconds)
-
   implicit val ctx: GeneratorContext = setupGeneratorContext()
+
 
   def setupGeneratorContext(): GeneratorContext = {
     new GeneratorContextActorProxy(system.actorOf(Props[GeneratorContextActor]))
   }
 
   def setup(input: String, port: Int): Unit = {
-
     setupEndpoints(
       EndpointManager(input),
       port,

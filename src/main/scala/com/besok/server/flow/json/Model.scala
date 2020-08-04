@@ -1,6 +1,7 @@
 package com.besok.server.flow.json
 
 import akka.http.scaladsl.model._
+import com.typesafe.scalalogging.Logger
 import org.yaml.snakeyaml.Yaml
 
 import scala.collection.mutable
@@ -16,10 +17,10 @@ case class StringUrl(url: String) {
       if (p.startsWith("{")) Param(getP(p), dyn = true)
       else Param(p, dyn = false)
   }
-
   private def getP(p: String) = {
     p.stripPrefix("{").stripSuffix("}").trim
   }
+
 
 }
 
@@ -73,11 +74,12 @@ object EndpointManager {
 
     val prefix: String = output.getOrElse("prefix", ">").asInstanceOf[String]
 
-    Some(EndpointTemplate(
-      get(map, "name"),
-      Input(method(get(input, "method")), StringUrl(get(input, "url"))),
-      Output(get(output, "code"), get(output, "body"), prefix)
-    ))
+    Some(
+      EndpointTemplate(
+        get(map, "name"),
+        Input(method(get(input, "method")), StringUrl(get(input, "url"))),
+        Output(get(output, "code"), get(output, "body"), prefix)
+      ))
   }
 }
 
@@ -91,9 +93,8 @@ case class EndpointManager(templates: Seq[EndpointTemplate], ctx: GeneratorConte
     case HttpRequest(m, Uri.Path(p), _, _, _) =>
       for (t <- templates if t.input.method == m) {
         t.input.compare(p) match {
-          // TODO: change the plain keys to the object since it can be parallel(no lock now)
           case Some(m) =>
-            m.foreach { case (k, v) => ctx.put(s"_endpoints.${t.name}.input.url.${k}", v.toJson) }
+            ctx.putMap(m.map { case (k, v) => (s"_endpoints.${t.name}.input.url.${k}", v.toJson) })
             return Some(t)
           case None => ()
         }

@@ -98,7 +98,7 @@ case class FromContextF(ctx: GeneratorContext, f: GeneratorContext => Json) exte
 
 object FromContextF {
   def byName(name: String) = (ctx: GeneratorContext) => {
-    // TODO: looks like a cork ... needs to change
+    // TODO: looks ugly ... needs to change
     if (name.contains("_endpoints") && name.contains("input.body")) {
       name.split("input.body") match {
         case Array(l, r) => ctx.get(l + "input.body").query(r).getOrElse(NullValue)

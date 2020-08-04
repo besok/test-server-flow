@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import akka.actor.{Actor, ActorRef}
 import akka.util.Timeout
 import akka.pattern.ask
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -20,14 +21,16 @@ trait GeneratorContext {
 
 class GeneratorContextMap extends GeneratorContext {
   private val objects = new ConcurrentHashMap[String, Json]()
-
+  val log: Logger = Logger[GeneratorContextMap]
 
   def get(key: String): Json = {
     Option(objects.get(key)).getOrElse(NullValue)
   }
 
-  def put(key: String, value: Json): Json =
+  def put(key: String, value: Json): Json = {
+    log.debug(s"put to map, key:$key, value:$value")
     objects.put(key, if (value == null) NullValue else value)
+  }
 
   override def putMap(map: Map[String, Json]) =
     for ((k, v) <- map) {
