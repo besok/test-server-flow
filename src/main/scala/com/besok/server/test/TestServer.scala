@@ -14,13 +14,11 @@ object TestServer {
   def main(args: Array[String]): Unit = {
     Http()
       .bind(interface = "localhost", 9000)
-      .to(Sink.foreach(_.handleWithSyncHandler(
-        {
-          r:HttpRequest =>
-            println(s"request: $r")
-            HttpResponse()
-        }
-      )))
+      .to(Sink.foreach(_.handleWithSyncHandler {
+        r: HttpRequest =>
+          println(s"request: $r")
+          HttpResponse()
+      }))
       .run()
   }
 }
