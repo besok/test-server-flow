@@ -108,7 +108,7 @@ class GeneratorParserTest extends FunSuite {
     }
   }
 
-  test("full_example") {
+  test("uuid") {
     T.test(_.functionWithCallback.run()) {
       ("uuid() => [var_name]", (f: GeneratorFunction) => f.generate match {
         case js@StringValue(v) =>
@@ -118,6 +118,5 @@ class GeneratorParserTest extends FunSuite {
       })
     }
   }
-
 
 }

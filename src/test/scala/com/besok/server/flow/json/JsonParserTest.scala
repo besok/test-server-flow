@@ -2,7 +2,8 @@ package com.besok.server.flow.json
 
 import org.scalatest.FunSuite
 
-import scala.language.implicitConversions;
+import scala.language.implicitConversions
+import scala.util.{Failure, Success};
 
 object JsonTester extends ParserTester {
   override type P = JsonParser
@@ -146,6 +147,24 @@ class JsonParserTest extends FunSuite {
       case None => fail()
       case Some(v) => assert(v == IntValue(1))
     }
+  }
 
+  test("example"){
+    import Json._
+    implicit val gc = new GeneratorContextMap
+    val txt = """{
+                |  "customer": {
+                |    ">|id": "seq(1)",
+                |    ">|name": "str(10)",
+                |    ">|age": "num(10,70)",
+                |    "address": {
+                |      ">|street": "str_list(Albany, CastleRock, Lenina, Church)",
+                |      ">|geo": "uuid() => [geo.address]"
+                |    },
+                |    ">|coming_date": "time() => [customer.coming_date]",
+                |    "constant_flag": "flag"
+                |  }
+                |}""".stripMargin
+    println(JsonGenerator(txt).newJsonString)
   }
 }

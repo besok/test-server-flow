@@ -9,9 +9,6 @@ then in accordance with the server response process some logic and send the info
 
 ![](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/besok/test-server-flow/master/doc/example1.plantuml)
 
-
-
-
 The server needs to receive a certain amount of events thereby we need to somehow send the group of messages regularly or one-time.
 
 ![](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/besok/test-server-flow/master/doc/example2.plantuml)
@@ -71,12 +68,38 @@ and then it can be retrieved as follows:
 ```
 *note  : if the variable does not exist the null will be return ```json {"id":null}```*
 
-### Endpoints and Parcels
-
-#### Examples
-- send generated jsons in parallel to the endpoint
-- send a json, get a response, wait, send a new one or to another endpoint
-- send a json, if the resp is 200 then do one thing if the resp is another do another thing.
-- send a json, get a response, send a json with the information from the response.
-...  
+Thus the following json template
+ ```json
+{
+  "customer": {
+    ">|id": "seq(1)",
+    ">|name": "str(10)",
+    ">|age": "num(10,70)",
+    "address": {
+      ">|street": "str_list(Albany, CastleRock, Lenina, Church)",
+      ">|geo": "uuid() => [geo.address]"
+    },
+    ">|coming_date": "time() => [customer.coming_date]",
+    "constant_flag": "flag"
+  }
+}
+```
+will be generated into:
+```json
+{
+  "customer": {
+       "id": 1,
+       "name": "dZJi2iA92d",
+       "age": 69,
+       "constant_flag": "flag",
+       "coming_date": "8/5/20, 9:50 PM",
+       "address": {
+           "street": "Albany",
+           "geo": "820dae67-2753-44b6-a9b8-16b20fca17d8"
+    }
+  }
+}
+``` 
  
+ 
+### Endpoints and Parcels
