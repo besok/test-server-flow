@@ -1,22 +1,14 @@
 ### Intention
 The service tends to be a mock web server able to test the pipelines of requests.
 
-The typical case can be depicted as follows:
-- there is a pipeline which needs to send some information to the server 
-then in accordance with the server response process some logic and send the information back to the server. 
-- the server needs to receive a certain amount of events thereby we need to somehow send the group of messages regularly or one-time.
+### The typical case can be depicted as follows:
 
-```mermaid 
-sequenceDiagram
-Alice->>John: Hello John, how are you?
-loop Healthcheck
-    John->>John: Fight against hypochondria
-end
-Note right of John: Rational thoughts!
-John-->>Alice: Great!
-John->>Bob: How about you?
-Bob-->>John: Jolly good!
-```
+There is a pipeline which needs to send some information to the server 
+then in accordance with the server response process some logic and send the information back to the server. 
+![](http://www.plantuml.com/plantuml/proxy?src=https://raw.github.com/plantuml/plantuml-server/master/src/main/webapp/resource/test2diagrams.txt)
+
+The server needs to receive a certain amount of events thereby we need to somehow send the group of messages regularly or one-time.
+
 
 
 ### Overall functions
