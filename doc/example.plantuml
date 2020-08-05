@@ -1,7 +1,11 @@
 @startuml
- -> Bob: Authentication Request
-Bob --> Alice: Authentication Response
-
-Alice -> Bob: Another authentication Request
-Alice <-- Bob: another authentication Response
+Test_Server --> Mock_Server: Request_1
+Mock_Server --> Mock_Server: generate json
+Mock_Server --> Test_Server: Response_1
+Mock_Server --> Test_Server: Parcel_1_on_the_trigger_1
+Mock_Server --> Test_Server_2: Parcel_1_on_the_trigger_1
+Mock_Server --> Mock_Server: generate json
+Mock_Server --> Test_Server: Parcel_2_on_the_trigger_2
+Test_Server --> Mock_Server: Request_2
+Mock_Server --> Test_Server_2: Parcel_2_on_the_trigger_2
 @enduml

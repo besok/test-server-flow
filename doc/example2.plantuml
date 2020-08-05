@@ -1,0 +1,3 @@
+@startuml
+Mock_Server --> Test_Server: send a parcel every second
+@enduml

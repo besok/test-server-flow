@@ -1,13 +1,18 @@
 ### Intention
-The service tends to be a mock web server able to test the pipelines of requests.
+The service tends to be a mock web server which is able to test the pipelines of requests 
+or emits the particular messages to the tested server. The interaction is performed by json-packages
 
 ### The typical case can be depicted as follows:
-
+#### Pipeline:
 There is a pipeline which needs to send some information to the server 
 then in accordance with the server response process some logic and send the information back to the server. 
 ![](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/besok/test-server-flow/master/doc/example.plantuml)
 
+
+
+
 The server needs to receive a certain amount of events thereby we need to somehow send the group of messages regularly or one-time.
+![](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/besok/test-server-flow/master/doc/example2.plantuml)
 
 
 
