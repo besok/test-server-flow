@@ -16,12 +16,10 @@ The server needs to receive a certain amount of events thereby we need to someho
 
 ![](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/besok/test-server-flow/master/doc/example2.plantuml)
 
-
-
 ### Overall functions
- The server consists of the following modules:
- - 
-
+ - an ability to generate JSON file in accordance with a given structure consider the particular generation functions
+ - an ability to receive a request from the test server and response on that accordingly
+ - an ability to send a request to the test server in accordance with the particular trigger
 
 ### Json generator
 
