@@ -102,4 +102,108 @@ will be generated into:
 ``` 
  
  
-### Endpoints and Parcels
+### Endpoints
+The server is able to receive requests from the test server and response to the particular answer.
+For working with endpoints It requires to provide a configuration file.
+
+Example:
+```yaml
+---
+endpoint:
+  name: endpoint1
+  input:
+    method: post
+    url: /endpoint
+  output:
+    code: 200
+    body: file:path\to\file\json_generator_template.json
+    prefix: ">"
+---
+endpoint:
+  name: endpoint2
+  input:
+    method: get
+    url: /endpoint/{id}/{param}
+  output:
+    code: 200
+    body: '{
+        ">|field1":" from_ctx(geo.address)",
+        ">|field2":" from_ctx(_endpoints.endpoint2.input.url.id)",
+        ">|field3":" from_ctx(_endpoints.endpoint1.input.body.id)",
+        ">|field4":" from_ctx(customer.coming_date)"
+     }'
+```
+#### Structure
+The file represents the list of the endpoints separated by '---'
+The fields are defined inside the entity as follows:
+- name : the name of the endpoint. Must be unique
+- input section describes the mathing parameters
+   - method: get,post,delete,put
+   - url: the url for request. Also, it is supposed to have params which can be retrieved from the request and used afterwards. 
+        For that they can be framed by {} like ```url: /endpoint/{{onetwo} ```. Thereafter they can be invoked by function "from_ctx(_endpoints.name.input.urk.onetwo)"
+- output section describes the response of the server
+    - code : http code
+    - body: JSON response. The response can be taken as from file by adding prefix 'file:' or from string ''. It can be a generator or genuine JSON
+    - prefix: the symbol which indicates that the field carries a generator function. The prefix compounds with '|' 
+    and with field name that eventually brings to the full name like that ">|id". After generation, the prefix with '|' omitted.       
+
+### Parcels
+The server can act as an active source of messages by sending parcels which can be configured analogously endpoints
+
+Example:
+```yaml
+---
+parcel:
+  name: parcel1
+  receiver:
+    method: post
+    url: 'http://localhost:9000/api/parcel1'
+  message:
+    body: file:C:\projects\test-server-flow\src\test\resources\jsons\simple_with_gen.json
+    prefix: ">"
+  trigger: endpoint(endpoint2)
+---
+parcel:
+  name: parcel2
+  receiver:
+    method: get
+    url: 'http://localhost:9000/api/parcel2/{_endpoints.endpoint2.input.url.id}/send'
+  trigger: parcel(parcel1)
+---
+parcel:
+  name: parcel3
+  receiver:
+    method: post
+    url: 'http://localhost:9000/api/parcel3/send'
+  message:
+    body: '{">|id":"seq(10)"}'
+  trigger: times(2,1,1)
+```
+    
+#### Structure
+The file represents the list of the endpoints separated by '---'
+The fields are defined inside the entity as follows:
+- name : the name of the parcel. Must be unique
+- receiver: describes the endpoint which will receive the parcel
+    - method: post,get,delete,put
+    - url: url to receive. Url can be parametrised by framed {} like ```url: 'http://localhost:9000/api/parcel2/{_endpoints.endpoint2.input.url.id}/send'```
+- message: describes the body to send. Can be wholly omitted.
+    - body: JSON response. The response can be taken as from file by adding prefix 'file:' or from string ''. It can be a generator or genuine 
+    - prefix: the symbol which indicates that the field carries a generator function. The prefix compounds with '|' 
+        and with field name that eventually brings to the full name like that ">|id". After generation, the prefix with '|' omitted. 
+- trigger: a trigger depicting the condition when the parcel should be sent.
+    - endpoint(endpoint name) : when the request comes to the specific endpoint
+    - parcel(parcel name): when the specific parcel has been sent
+    - times(number of times, the gap between parcels in sec, initial delay in sec): the request which periodically repeated.
+    
+
+### How to run:
+The console application expects to get at least the configuration file composes from endpoint and parcel configurations and port number. 
+If the port is not set the default value will be used namely 9090
+
+Example:
+```cmd
+server.jar c=C:\config\endpoints_parcels.yml -p=9999
+```           
+    
+        

@@ -22,5 +22,3 @@ endpoint:
         ">|field3":" from_ctx(_endpoints.endpoint1.input.body.id)",
         ">|field4":" from_ctx(customer.coming_date)"
      }'
-
-
