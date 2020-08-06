@@ -140,7 +140,7 @@ The fields are defined inside the entity as follows:
 - input section describes the mathing parameters
    - method: get,post,delete,put
    - url: the url for request. Also, it is supposed to have params which can be retrieved from the request and used afterwards. 
-        For that they can be framed by {} like ```url: /endpoint/{{onetwo} ```. Thereafter they can be invoked by function "from_ctx(_endpoints.name.input.urk.onetwo)"
+        For that they can be framed by {} like ```url: /endpoint/{onetwo} ```. Thereafter they can be invoked by function "from_ctx(_endpoints.name.input.urk.onetwo)"
 - output section describes the response of the server
     - code : http code
     - body: JSON response. The response can be taken as from file by adding prefix 'file:' or from string ''. It can be a generator or genuine JSON
